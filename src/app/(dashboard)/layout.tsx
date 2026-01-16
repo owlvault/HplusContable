@@ -22,7 +22,10 @@ export default function DashboardLayout({
                 </div>
 
                 <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <Link href="/puc" style={{ padding: '0.75rem', borderRadius: 'var(--radius-md)', textDecoration: 'none', color: 'hsl(var(--text-main))', backgroundColor: 'hsl(var(--surface-hover))' }}>
+                    <Link href="/dashboard" style={{ padding: '0.75rem', borderRadius: 'var(--radius-md)', textDecoration: 'none', color: 'hsl(var(--text-main))' }}>
+                        Dashboard
+                    </Link>
+                    <Link href="/puc" style={{ padding: '0.75rem', borderRadius: 'var(--radius-md)', textDecoration: 'none', color: 'hsl(var(--text-main))' }}>
                         Plan de Cuentas
                     </Link>
                     <Link href="/terceros" style={{ padding: '0.75rem', borderRadius: 'var(--radius-md)', textDecoration: 'none', color: 'hsl(var(--text-main))' }}>
