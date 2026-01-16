@@ -7,13 +7,6 @@ export async function updateSession(request: NextRequest) {
         request,
     })
 
-    console.log('--- DEBUG MIDDLEWARE ---');
-    console.log('URL Defined:', !!process.env.NEXT_PUBLIC_SUPABASE_URL);
-    console.log('Key Defined:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-    console.log('URL is Placeholder:', process.env.NEXT_PUBLIC_SUPABASE_URL === 'your-project-url');
-    console.log('Key is Placeholder:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === 'your-anon-key');
-    console.log('------------------------');
-
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -37,23 +30,28 @@ export async function updateSession(request: NextRequest) {
         }
     )
 
-    // IMPORTANT: Avoid writing any logic between createServerClient and
-    // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-    // issues with users being randomly logged out.
-
     const {
         data: { user },
     } = await supabase.auth.getUser()
 
-    if (
-        !user &&
-        !request.nextUrl.pathname.startsWith('/login') &&
-        !request.nextUrl.pathname.startsWith('/auth')
-    ) {
-        // no user, potentially redirect to login page
-        // const url = request.nextUrl.clone()
-        // url.pathname = '/login'
-        // return NextResponse.redirect(url)
+    // Protected routes - redirect to login if not authenticated
+    const protectedPaths = ['/dashboard', '/puc', '/terceros', '/asientos', '/reportes', '/comprobantes']
+    const isProtectedPath = protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))
+
+    if (!user && isProtectedPath) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/login'
+        return NextResponse.redirect(url)
+    }
+
+    // Redirect authenticated users away from auth pages
+    const authPaths = ['/login', '/register']
+    const isAuthPath = authPaths.some(path => request.nextUrl.pathname.startsWith(path))
+
+    if (user && isAuthPath) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/dashboard'
+        return NextResponse.redirect(url)
     }
 
     return supabaseResponse
