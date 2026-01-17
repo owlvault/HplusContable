@@ -56,6 +56,11 @@
   margin: 0;
 }
 
+/* Hide Next.js development error overlay for hydration warnings */
+nextjs-portal {
+  display: none !important;
+}
+
 body {
   font-family: 'Inter', sans-serif;
   background-color: hsl(var(--background));
