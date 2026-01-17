@@ -13,6 +13,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            // Suppress hydration warnings from browser extensions
+            window.__NEXT_HYDRATION_ERROR_INFO = { shouldShowDevOverlay: false };
+          `
+        }} />
+      </head>
       <body suppressHydrationWarning>{children}</body>
     </html>
   );
