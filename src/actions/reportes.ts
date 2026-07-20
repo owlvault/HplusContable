@@ -261,6 +261,7 @@ export async function getBalanceSheet(year: number, month: number) {
     const supabase = await createClient();
 
     const endDate = new Date(year, month, 0, 23, 59, 59);
+    const startOfYear = new Date(year, 0, 1);
 
     // Get all journal lines up to the end date
     const { data: lines, error } = await supabase
@@ -276,26 +277,44 @@ export async function getBalanceSheet(year: number, month: number) {
 
     if (error) {
         console.error('Error fetching lines:', error);
-        return { assets: [], liabilities: [], equity: [], totalAssets: 0, totalLiabilities: 0, totalEquity: 0 };
+        return { assets: [], liabilities: [], equity: [], totalAssets: 0, totalLiabilities: 0, totalEquity: 0, netIncome: 0 };
     }
 
-    // Get PUC accounts
-    const { data: accounts } = await supabase
+    // Get PUC accounts for balance sheet
+    const { data: bsAccounts } = await supabase
         .from('puc_accounts')
         .select('code, name, level, nature, type')
         .in('type', ['ACTIVO', 'PASIVO', 'PATRIMONIO'])
         .order('code');
 
-    if (!accounts) return { assets: [], liabilities: [], equity: [], totalAssets: 0, totalLiabilities: 0, totalEquity: 0 };
+    // Get PUC accounts for income statement (to calculate net income)
+    const { data: isAccounts } = await supabase
+        .from('puc_accounts')
+        .select('code, name, level, nature, type')
+        .in('type', ['INGRESO', 'GASTO', 'COSTO_VENTAS'])
+        .order('code');
+
+    if (!bsAccounts) return { assets: [], liabilities: [], equity: [], totalAssets: 0, totalLiabilities: 0, totalEquity: 0, netIncome: 0 };
 
     // Aggregate by account
     const balances: Record<string, number> = {};
+    // Separate aggregation for income/expense (only current year for net income)
+    const ytdBalances: Record<string, number> = {};
     
     for (const line of lines || []) {
         if (!balances[line.account_code]) {
             balances[line.account_code] = 0;
         }
         balances[line.account_code] += (line.debit || 0) - (line.credit || 0);
+
+        // For YTD net income calculation
+        const entryDate = new Date((line.journal_entry as any).date);
+        if (entryDate >= startOfYear) {
+            if (!ytdBalances[line.account_code]) {
+                ytdBalances[line.account_code] = 0;
+            }
+            ytdBalances[line.account_code] += (line.credit || 0) - (line.debit || 0);
+        }
     }
 
     const assets: BalanceSheetItem[] = [];
@@ -305,7 +324,7 @@ export async function getBalanceSheet(year: number, month: number) {
     let totalLiabilities = 0;
     let totalEquity = 0;
 
-    for (const account of accounts) {
+    for (const account of bsAccounts) {
         const rawBalance = balances[account.code] || 0;
         if (rawBalance === 0) continue;
 
@@ -332,7 +351,34 @@ export async function getBalanceSheet(year: number, month: number) {
         }
     }
 
-    return { assets, liabilities, equity, totalAssets, totalLiabilities, totalEquity };
+    // Calculate YTD Net Income from income statement accounts
+    let netIncome = 0;
+    if (isAccounts) {
+        for (const account of isAccounts) {
+            const balance = ytdBalances[account.code] || 0;
+            if (account.type === 'INGRESO') {
+                netIncome += balance;
+            } else {
+                netIncome -= Math.abs(balance);
+            }
+        }
+    }
+
+    // Add "Utilidad del Ejercicio" as a virtual equity line if there's net income
+    if (netIncome !== 0) {
+        equity.push({
+            code: '36',
+            name: 'Utilidad del Ejercicio',
+            level: 2,
+            debit: 0,
+            credit: 0,
+            balance: netIncome,
+            nature: 'CREDITO',
+        });
+        totalEquity += netIncome;
+    }
+
+    return { assets, liabilities, equity, totalAssets, totalLiabilities, totalEquity, netIncome };
 }
 
 // Get Income Statement (Estado de Resultados)
