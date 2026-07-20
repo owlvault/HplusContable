@@ -57,3 +57,8 @@ next-env.d.ts
 # Environment files
 *.env
 *.env.*
+.env
+.env.*
+credentials.json
+*.key
+.credentials

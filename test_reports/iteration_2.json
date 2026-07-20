@@ -1,0 +1,48 @@
+{
+  "summary": "E2E frontend + integration testing of DigiKawsay MVP. Supabase host is now resolvable (fitjpyqrecgvlrlpwipn.supabase.co) — the previous NXDOMAIN blocker is gone. All 9 requested flows PASS: login, dashboard stats, /reportes with all 5 report types (all generate successfully), /cierre with 12-month grid + Validar validation panel, /tesoreria, /facturas, /cartera. Minor UX gap: sidebar navigation is missing a link to /cierre (Cierre Contable) — only reachable via direct URL. Static code review flagged some HIGH-priority backend concerns (already reported in iteration_1) that remain unfixed but do not block current test scope.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "src/actions/invoices.ts getNextInvoiceNumber/createInvoice", "issue": "Read-modify-write on document_sequences + non-transactional invoice+lines insert. Race condition + orphaned sequence numbers on failure. Should be wrapped in a Postgres RPC (unchanged since iteration_1)."},
+      {"endpoint": "src/actions/invoices.ts approveInvoice", "issue": "Does not verify at least one row was updated; returns success even if invoice was already APPROVED (unchanged since iteration_1)."},
+      {"endpoint": "src/actions/cierre.ts", "issue": "Not verified via unit tests, but flow works end-to-end. `accounting_periods` table auto-creation on validate/close works — cierre grid renders all 12 months with default OPEN status."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "DashboardLayout sidebar (src/app/(dashboard)/layout.tsx)", "issue": "'Cierre Contable' link is MISSING from sidebar navItems. The /cierre page exists and works, but users cannot reach it from the UI — only via direct URL. Should add {href:'/cierre', label:'Cierre Contable', icon:'🔒'}.", "selector": "aside nav", "priority": "MEDIUM"},
+      {"component": "LoginPage (src/app/(auth)/login/page.tsx)", "issue": "Uses inline `style={{}}` with hsl(var(--...)) CSS variables everywhere instead of Tailwind classes. Works, but inconsistent with the Tailwind-based pages. Error banner shows raw Supabase strings such as 'Failed to fetch' — no i18n.", "selector": "[data-testid='login-submit-button']", "priority": "LOW"},
+      {"component": "ReportesPage / CierrePage", "issue": "Uses browser alert()/confirm() for error surfaces and confirmation dialogs. Poor UX and untestable via a11y. Should use shadcn Dialog/Toast.", "selector": "[data-testid='reportes-page'], [data-testid='cierre-page']", "priority": "LOW"},
+      {"component": "InvoicesTable (facturas page)", "issue": "iteration_1 flagged duplicate data-testid='new-invoice-btn' on two Nueva Factura buttons — visually confirmed today: 'Facturas de Venta' and 'Facturas de Compra' each render a 'Nueva Factura' button. Selector still ambiguous.", "selector": "[data-testid='new-invoice-btn']", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Cierre", "issues": ["Year selector defaults to 2026. All months render as OPEN which is expected when no periods have been created yet. Layout is clean; 4-column grid renders well on desktop."]},
+      {"screen": "Estado de Resultados report", "issues": ["Renders correctly with INGRESOS OPERACIONALES (413505 - Venta de Mercancías $5.000.000), UTILIDAD BRUTA $5.000.000, GASTOS $0, UTILIDAD NETA $5.000.000. Numbers reconcile with dashboard."]},
+      {"screen": "Cartera page", "issues": ["Aging analysis renders correctly. Table shows FV-00002 Comercializadora XYZ Ltda $5.950.000 in 'Corriente' bucket — data flows correctly from invoices."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "P2 (UX): Add Cierre Contable link to DashboardLayout sidebar navItems (src/app/(dashboard)/layout.tsx).",
+    "P1 (data integrity, from iteration_1): Wrap getNextInvoiceNumber + invoice insert in a Postgres RPC/transaction.",
+    "P2 (UX/testing, from iteration_1): Give the two 'Nueva Factura' buttons distinct data-testids (e.g. new-invoice-btn-VENTA / new-invoice-btn-COMPRA).",
+    "P2 (UX): Replace alert()/confirm() in reportes/cierre pages with shadcn Dialog + Toast for consistent UX and better testability.",
+    "P3: Map Supabase auth error strings to Spanish user-friendly messages in LoginPage."
+  ],
+  "critical_code_review_comments": [
+    "Cierre Contable route (/cierre) is reachable and functional but has NO sidebar link — navigation gap.",
+    "Two duplicate data-testid='new-invoice-btn' on the /facturas page remain (iteration_1 finding still open).",
+    "Invoice creation still not transactional (race + orphaned sequence numbers) — iteration_1 finding still open.",
+    "Login page mixes inline hsl(var(--)) style with the rest-of-app Tailwind — visual/design inconsistency.",
+    "Business actions use alert()/confirm() dialogs instead of the project's shadcn/ui primitives — cannot be dismissed from Playwright without event handlers."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not_directly_tested_via_pytest (server actions exercised through UI E2E - all succeeded)", "frontend": "100% of requested flows passed"},
+  "test_credentials": "admin@digikawsay.app / CalamarDorado9! — verified working against Supabase project fitjpyqrecgvlrlpwipn.supabase.co",
+  "seed_data_creation": "None. Existing seed data in Supabase: 1 client (Comercializadora XYZ Ltda 800987654), 1 approved invoice FV-00002 for $5.950.000, and one journal entry with $5.000.000 revenue on account 413505.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Supabase URL in /app/.env is now correct (fitjpyqrecgvlrlpwipn.supabase.co, verified reachable). Login credentials in /app/memory/test_credentials.md match: admin@digikawsay.app / CalamarDorado9!. All 9 requested E2E flows succeed. Only cosmetic/UX/testability issues remain: missing Cierre sidebar link, duplicate data-testids on facturas, alert()/confirm() usage. The invoice numbering race condition (iteration_1 finding) remains an open backend concern — requires an RPC to fix. To re-test: login → visit /reportes (click each of the 5 report cards then 'Generar Reporte') → /cierre (click 'Validar' on any month card) → /tesoreria → /facturas → /cartera.",
+  "rca of the issue": "N/A — no critical bugs found in this iteration. Prior iteration_1 BLOCKER (Supabase NXDOMAIN) has been resolved by updating NEXT_PUBLIC_SUPABASE_URL in /app/.env from yatmqefliwhkoejmwdvt.supabase.co to fitjpyqrecgvlrlpwipn.supabase.co. DNS now returns valid A records (172.64.149.246, 104.18.38.10) and Supabase auth /health endpoint returns 401 (i.e. reachable & serving). Login and every downstream module now works end-to-end."
+}

@@ -1,226 +1,234 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { getTrialBalance, getIncomeStatement } from '@/actions/reports';
-import { formatCOP } from '@/lib/utils/dian';
+import { useState } from 'react';
+import { 
+    getReceivablesReportByClient, 
+    getPayablesReportBySupplier, 
+    getTrialBalance, 
+    getBalanceSheet, 
+    getIncomeStatement 
+} from '@/actions/reportes';
+import { CarteraReport } from '@/components/reportes/cartera-report';
+import { BalanceSheet } from '@/components/reportes/balance-sheet';
+import { IncomeStatement } from '@/components/reportes/income-statement';
+import { TrialBalance } from '@/components/reportes/trial-balance';
+import { FileText, Users, Building2, BarChart3, PieChart, Loader2, Printer } from 'lucide-react';
 
-type ReportType = 'trial-balance' | 'income-statement';
+type ReportType = 'cartera-clientes' | 'cartera-proveedores' | 'balance-comprobacion' | 'balance-general' | 'estado-resultados';
 
 export default function ReportesPage() {
-    const [reportType, setReportType] = useState<ReportType>('trial-balance');
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+    const [reportType, setReportType] = useState<ReportType>('cartera-clientes');
+    const [year, setYear] = useState(new Date().getFullYear());
+    const [month, setMonth] = useState(new Date().getMonth() + 1);
     const [loading, setLoading] = useState(false);
-    const [trialBalance, setTrialBalance] = useState<any>(null);
-    const [incomeStatement, setIncomeStatement] = useState<any>(null);
+    const [reportData, setReportData] = useState<any>(null);
+
+    const reportOptions = [
+        { id: 'cartera-clientes', label: 'Cartera por Clientes', icon: Users, description: 'Cuentas por cobrar agrupadas por cliente' },
+        { id: 'cartera-proveedores', label: 'Cartera por Proveedores', icon: Building2, description: 'Cuentas por pagar agrupadas por proveedor' },
+        { id: 'balance-comprobacion', label: 'Balance de Comprobación', icon: BarChart3, description: 'Sumas y saldos de todas las cuentas' },
+        { id: 'balance-general', label: 'Balance General', icon: FileText, description: 'Estado de Situación Financiera' },
+        { id: 'estado-resultados', label: 'Estado de Resultados', icon: PieChart, description: 'Ingresos, gastos y utilidad del período' },
+    ];
+
+    const months = [
+        { value: 1, label: 'Enero' },
+        { value: 2, label: 'Febrero' },
+        { value: 3, label: 'Marzo' },
+        { value: 4, label: 'Abril' },
+        { value: 5, label: 'Mayo' },
+        { value: 6, label: 'Junio' },
+        { value: 7, label: 'Julio' },
+        { value: 8, label: 'Agosto' },
+        { value: 9, label: 'Septiembre' },
+        { value: 10, label: 'Octubre' },
+        { value: 11, label: 'Noviembre' },
+        { value: 12, label: 'Diciembre' },
+    ];
 
     const loadReport = async () => {
         setLoading(true);
+        setReportData(null);
+        
         try {
-            if (reportType === 'trial-balance') {
-                const data = await getTrialBalance(startDate || undefined, endDate || undefined);
-                setTrialBalance(data);
-                setIncomeStatement(null);
-            } else {
-                const data = await getIncomeStatement(startDate || undefined, endDate || undefined);
-                setIncomeStatement(data);
-                setTrialBalance(null);
+            let data;
+            switch (reportType) {
+                case 'cartera-clientes':
+                    data = await getReceivablesReportByClient();
+                    break;
+                case 'cartera-proveedores':
+                    data = await getPayablesReportBySupplier();
+                    break;
+                case 'balance-comprobacion':
+                    data = await getTrialBalance(year, month);
+                    break;
+                case 'balance-general':
+                    data = await getBalanceSheet(year, month);
+                    break;
+                case 'estado-resultados':
+                    data = await getIncomeStatement(year, month);
+                    break;
             }
+            setReportData(data);
         } catch (error) {
             console.error('Error loading report:', error);
+            alert('Error al cargar el reporte');
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
+    const handlePrint = () => {
+        window.print();
+    };
+
+    const getPeriodString = () => {
+        const monthName = months.find(m => m.value === month)?.label || '';
+        return `${monthName} ${year}`;
+    };
+
+    const needsPeriod = ['balance-comprobacion', 'balance-general', 'estado-resultados'].includes(reportType);
+
     return (
-        <div>
-            <div style={{ marginBottom: '2rem' }}>
-                <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Reportes Financieros</h1>
-                <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.875rem' }}>
-                    Genera balance de prueba y estado de resultados
-                </p>
+        <div data-testid="reportes-page">
+            <div className="mb-6 print:hidden">
+                <h1 className="text-2xl font-bold text-gray-900">Reportes Financieros</h1>
+                <p className="text-gray-500 mt-1">Genera reportes contables y de cartera</p>
             </div>
 
-            {/* Controls */}
-            <div className="card" style={{ marginBottom: '2rem' }}>
-                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.875rem' }}>Tipo de Reporte</label>
-                        <select
-                            value={reportType}
-                            onChange={(e) => setReportType(e.target.value as ReportType)}
-                            style={{ padding: '0.625rem', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius-md)', minWidth: '200px' }}
+            {/* Report Selection */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6 print:hidden">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Selecciona un Reporte</h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 mb-6">
+                    {reportOptions.map((option) => (
+                        <button
+                            key={option.id}
+                            onClick={() => { setReportType(option.id as ReportType); setReportData(null); }}
+                            className={`p-4 rounded-lg border-2 text-left transition-all ${
+                                reportType === option.id 
+                                    ? 'border-blue-500 bg-blue-50' 
+                                    : 'border-gray-200 hover:border-gray-300'
+                            }`}
                         >
-                            <option value="trial-balance">Balance de Prueba</option>
-                            <option value="income-statement">Estado de Resultados</option>
-                        </select>
+                            <option.icon className={`mb-2 ${reportType === option.id ? 'text-blue-600' : 'text-gray-400'}`} size={24} />
+                            <p className={`font-medium text-sm ${reportType === option.id ? 'text-blue-900' : 'text-gray-900'}`}>
+                                {option.label}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">{option.description}</p>
+                        </button>
+                    ))}
+                </div>
+
+                {/* Period Selection (for financial reports) */}
+                {needsPeriod && (
+                    <div className="flex flex-wrap gap-4 items-end mb-6 p-4 bg-gray-50 rounded-lg">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Año</label>
+                            <select
+                                value={year}
+                                onChange={(e) => setYear(parseInt(e.target.value))}
+                                className="px-3 py-2 border border-gray-300 rounded-lg"
+                            >
+                                {[2024, 2025, 2026].map((y) => (
+                                    <option key={y} value={y}>{y}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Mes</label>
+                            <select
+                                value={month}
+                                onChange={(e) => setMonth(parseInt(e.target.value))}
+                                className="px-3 py-2 border border-gray-300 rounded-lg"
+                            >
+                                {months.map((m) => (
+                                    <option key={m.value} value={m.value}>{m.label}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.875rem' }}>Desde</label>
-                        <input
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            style={{ padding: '0.625rem', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius-md)' }}
-                        />
-                    </div>
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.875rem' }}>Hasta</label>
-                        <input
-                            type="date"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            style={{ padding: '0.625rem', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius-md)' }}
-                        />
-                    </div>
-                    <button onClick={loadReport} disabled={loading} className="btn btn-primary" data-testid="generate-report-button">
-                        {loading ? 'Generando...' : 'Generar Reporte'}
+                )}
+
+                <div className="flex gap-3">
+                    <button
+                        onClick={loadReport}
+                        disabled={loading}
+                        className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                        data-testid="generate-report-btn"
+                    >
+                        {loading ? (
+                            <>
+                                <Loader2 className="animate-spin" size={18} />
+                                Generando...
+                            </>
+                        ) : (
+                            <>
+                                <FileText size={18} />
+                                Generar Reporte
+                            </>
+                        )}
                     </button>
+                    
+                    {reportData && (
+                        <button
+                            onClick={handlePrint}
+                            className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                        >
+                            <Printer size={18} />
+                            Imprimir
+                        </button>
+                    )}
                 </div>
             </div>
 
-            {/* Trial Balance Report */}
-            {trialBalance && (
-                <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                    <div style={{ padding: '1rem', borderBottom: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--surface-hover))' }}>
-                        <h2 style={{ fontSize: '1.125rem', margin: 0 }}>Balance de Prueba</h2>
-                        {startDate && endDate && (
-                            <p style={{ fontSize: '0.875rem', color: 'hsl(var(--text-secondary))', margin: '0.25rem 0 0' }}>
-                                {startDate} al {endDate}
-                            </p>
-                        )}
-                    </div>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                            <tr style={{ borderBottom: '1px solid hsl(var(--border))', fontSize: '0.875rem' }}>
-                                <th style={{ padding: '1rem', textAlign: 'left' }}>Código</th>
-                                <th style={{ padding: '1rem', textAlign: 'left' }}>Cuenta</th>
-                                <th style={{ padding: '1rem', textAlign: 'right' }}>Débito</th>
-                                <th style={{ padding: '1rem', textAlign: 'right' }}>Crédito</th>
-                                <th style={{ padding: '1rem', textAlign: 'right' }}>Saldo</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {trialBalance.accounts.length === 0 ? (
-                                <tr>
-                                    <td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: 'hsl(var(--text-secondary))' }}>
-                                        No hay movimientos contables aprobados en el período seleccionado.
-                                    </td>
-                                </tr>
-                            ) : (
-                                trialBalance.accounts.map((acc: any) => (
-                                    <tr key={acc.code} style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                                        <td style={{ padding: '0.75rem 1rem', fontFamily: 'monospace' }}>{acc.code}</td>
-                                        <td style={{ padding: '0.75rem 1rem' }}>{acc.name}</td>
-                                        <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>{formatCOP(acc.debit)}</td>
-                                        <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>{formatCOP(acc.credit)}</td>
-                                        <td style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: 500, color: acc.balance >= 0 ? 'hsl(var(--accent))' : 'hsl(var(--error))' }}>
-                                            {formatCOP(acc.balance)}
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                        {trialBalance.accounts.length > 0 && (
-                            <tfoot style={{ backgroundColor: 'hsl(var(--surface-hover))' }}>
-                                <tr style={{ fontWeight: 'bold' }}>
-                                    <td colSpan={2} style={{ padding: '1rem' }}>TOTALES</td>
-                                    <td style={{ padding: '1rem', textAlign: 'right' }}>{formatCOP(trialBalance.totalDebit)}</td>
-                                    <td style={{ padding: '1rem', textAlign: 'right' }}>{formatCOP(trialBalance.totalCredit)}</td>
-                                    <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                        <span style={{ color: trialBalance.isBalanced ? 'hsl(var(--accent))' : 'hsl(var(--error))' }}>
-                                            {trialBalance.isBalanced ? '✓ Cuadrado' : '✗ Descuadrado'}
-                                        </span>
-                                    </td>
-                                </tr>
-                            </tfoot>
-                        )}
-                    </table>
+            {/* Report Display */}
+            {reportData && (
+                <div className="print:m-0">
+                    {reportType === 'cartera-clientes' && (
+                        <CarteraReport 
+                            title="Reporte de Cartera por Clientes" 
+                            data={reportData} 
+                            type="receivable" 
+                        />
+                    )}
+                    
+                    {reportType === 'cartera-proveedores' && (
+                        <CarteraReport 
+                            title="Reporte de Cartera por Proveedores" 
+                            data={reportData} 
+                            type="payable" 
+                        />
+                    )}
+                    
+                    {reportType === 'balance-comprobacion' && (
+                        <TrialBalance 
+                            data={reportData} 
+                            period={getPeriodString()} 
+                        />
+                    )}
+                    
+                    {reportType === 'balance-general' && (
+                        <BalanceSheet 
+                            {...reportData} 
+                            period={`Al ${new Date(year, month, 0).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}`} 
+                        />
+                    )}
+                    
+                    {reportType === 'estado-resultados' && (
+                        <IncomeStatement 
+                            {...reportData} 
+                            period={getPeriodString()} 
+                        />
+                    )}
                 </div>
             )}
 
-            {/* Income Statement Report */}
-            {incomeStatement && (
-                <div className="card">
-                    <div style={{ marginBottom: '1.5rem' }}>
-                        <h2 style={{ fontSize: '1.125rem', marginBottom: '0.25rem' }}>Estado de Resultados</h2>
-                        {startDate && endDate && (
-                            <p style={{ fontSize: '0.875rem', color: 'hsl(var(--text-secondary))' }}>
-                                {startDate} al {endDate}
-                            </p>
-                        )}
-                    </div>
-
-                    <div style={{ display: 'grid', gap: '1.5rem' }}>
-                        {/* Ingresos */}
-                        <div>
-                            <h3 style={{ fontSize: '1rem', marginBottom: '1rem', color: 'hsl(var(--accent))' }}>INGRESOS</h3>
-                            {incomeStatement.incomeDetails.length === 0 ? (
-                                <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.875rem' }}>Sin ingresos registrados</p>
-                            ) : (
-                                incomeStatement.incomeDetails.map((item: any) => (
-                                    <div key={item.code} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid hsl(var(--border))' }}>
-                                        <span>{item.code} - {item.name}</span>
-                                        <span>{formatCOP(item.amount)}</span>
-                                    </div>
-                                ))
-                            )}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', fontWeight: 'bold' }}>
-                                <span>Total Ingresos</span>
-                                <span style={{ color: 'hsl(var(--accent))' }}>{formatCOP(incomeStatement.income)}</span>
-                            </div>
-                        </div>
-
-                        {/* Costo de Ventas */}
-                        {incomeStatement.costOfSales > 0 && (
-                            <div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', fontWeight: 'bold', borderTop: '1px solid hsl(var(--border))' }}>
-                                    <span>(-) Costo de Ventas</span>
-                                    <span style={{ color: 'hsl(var(--error))' }}>{formatCOP(incomeStatement.costOfSales)}</span>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', fontWeight: 'bold', backgroundColor: 'hsl(var(--surface-hover))', margin: '0 -1.5rem', padding: '0.75rem 1.5rem' }}>
-                                    <span>UTILIDAD BRUTA</span>
-                                    <span>{formatCOP(incomeStatement.grossProfit)}</span>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Gastos */}
-                        <div>
-                            <h3 style={{ fontSize: '1rem', marginBottom: '1rem', color: 'hsl(var(--error))' }}>GASTOS OPERACIONALES</h3>
-                            {incomeStatement.expenseDetails.length === 0 ? (
-                                <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.875rem' }}>Sin gastos registrados</p>
-                            ) : (
-                                incomeStatement.expenseDetails.map((item: any) => (
-                                    <div key={item.code} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid hsl(var(--border))' }}>
-                                        <span>{item.code} - {item.name}</span>
-                                        <span>{formatCOP(item.amount)}</span>
-                                    </div>
-                                ))
-                            )}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', fontWeight: 'bold' }}>
-                                <span>Total Gastos</span>
-                                <span style={{ color: 'hsl(var(--error))' }}>{formatCOP(incomeStatement.expenses)}</span>
-                            </div>
-                        </div>
-
-                        {/* Utilidad Neta */}
-                        <div style={{ backgroundColor: incomeStatement.netProfit >= 0 ? 'hsl(var(--accent)/0.1)' : 'hsl(var(--error)/0.1)', margin: '0 -1.5rem -1.5rem', padding: '1.5rem', borderRadius: '0 0 var(--radius-lg) var(--radius-lg)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 'bold' }}>
-                                <span>UTILIDAD NETA</span>
-                                <span style={{ color: incomeStatement.netProfit >= 0 ? 'hsl(var(--accent))' : 'hsl(var(--error))' }}>
-                                    {formatCOP(incomeStatement.netProfit)}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {!trialBalance && !incomeStatement && !loading && (
-                <div className="card" style={{ textAlign: 'center', padding: '3rem', color: 'hsl(var(--text-secondary))' }}>
-                    <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>📈</span>
-                    <p>Selecciona un tipo de reporte y haz clic en "Generar Reporte"</p>
+            {/* Empty State */}
+            {!reportData && !loading && (
+                <div className="bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 p-12 text-center print:hidden">
+                    <FileText className="mx-auto text-gray-400 mb-4" size={48} />
+                    <p className="text-gray-500">Selecciona un tipo de reporte y haz clic en "Generar Reporte"</p>
                 </div>
             )}
         </div>

@@ -4,7 +4,8 @@ import { useRouter } from 'next/navigation';
 import { InvoiceWithDetails, INVOICE_STATE_LABELS, INVOICE_STATE_COLORS, InvoiceState } from '@/types/invoices';
 import { approveInvoice, cancelInvoice, markInvoiceAsPaid } from '@/actions/invoices';
 import { useState } from 'react';
-import { ArrowLeft, CheckCircle, XCircle, DollarSign, Printer, Edit } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, DollarSign, Printer, Edit, Download } from 'lucide-react';
+import { downloadInvoicePDF } from './invoice-pdf';
 
 interface InvoiceDetailProps {
     invoice: InvoiceWithDetails;
@@ -131,11 +132,19 @@ export function InvoiceDetail({ invoice }: InvoiceDetailProps) {
                     )}
                     <button
                         onClick={handlePrint}
-                        className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        className="flex items-center gap-2 px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
                         data-testid="print-btn"
                     >
                         <Printer size={18} />
                         Imprimir
+                    </button>
+                    <button
+                        onClick={() => downloadInvoicePDF(invoice)}
+                        className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        data-testid="download-pdf-btn"
+                    >
+                        <Download size={18} />
+                        Descargar PDF
                     </button>
                 </div>
             </div>
