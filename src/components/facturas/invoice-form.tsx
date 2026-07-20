@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createInvoice, calculateInvoiceTotals, InvoiceLine } from '@/actions/invoices';
+import { createInvoice } from '@/actions/invoices';
+import { calculateInvoiceTotals } from '@/lib/utils/invoice-calc';
 import { getThirdParties } from '@/actions/third-parties';
-import { TAX_RATES } from '@/types/invoices';
+import { TAX_RATES, InvoiceLine } from '@/types/invoices';
 import { Plus, Trash2, Save, ArrowLeft } from 'lucide-react';
 
 interface ThirdParty {

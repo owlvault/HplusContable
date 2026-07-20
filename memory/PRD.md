@@ -99,8 +99,11 @@ Todas las tablas creadas en Supabase:
 - [ ] Fase 7: Cierre contable
 
 ## Credenciales de Prueba
-- Email: admin@digikawsay.com
-- Password: Admin123!
+- Email: admin@digikawsay.app
+- Password: CalamarDorado9!
+
+## Supabase Project
+- URL: https://fitjpyqrecgvlrlpwipn.supabase.co
 
 ## Notas Técnicas
 - La aplicación usa Next.js Server Actions para operaciones de BD
