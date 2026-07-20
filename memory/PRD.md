@@ -3,78 +3,55 @@
 ## Descripción General
 DigiKawsay (HplusContable) es un software contable SaaS para Colombia, diseñado para una sola empresa con arquitectura modular monolítica.
 
-## Estado Actual: MVP COMPLETO - Listo para Despliegue
+## Estado Actual: MVP COMPLETO + MEJORAS UX - Listo para Despliegue
 
 ### Funcionalidades Implementadas
 
-#### Core Accounting (Previo)
+#### Core Accounting
 - ✅ PUC (Plan Único de Cuentas) - CRUD completo
 - ✅ Terceros (Clientes/Proveedores/Empleados) - CRUD completo
 - ✅ Asientos Contables - Creación con partida doble
 - ✅ Comprobantes 
 - ✅ DigiCFO (Chatbot AI conectado a datos reales de Supabase)
 
-#### Módulo de Facturación (Fase 2) - Completado
+#### Módulo de Facturación
 - ✅ CRUD de facturas de venta (FV) y compra (FC)
 - ✅ Cálculo automático de IVA (0%, 5%, 19%)
 - ✅ Manejo de retenciones (Fuente, IVA, ICA)
-- ✅ Estados de factura (DRAFT, APPROVED, SENT, PAID, CANCELLED)
-- ✅ Consecutivos automáticos por prefijo
-- ✅ Vista de detalle con impresión
-- ✅ Dashboard con estadísticas
-- ✅ **Contabilización automática** al aprobar (genera asiento contable)
-- ✅ **Generación de PDF** de facturas (@react-pdf/renderer)
+- ✅ Contabilización automática al aprobar
+- ✅ Generación de PDF de facturas
+- ✅ **NUEVO**: Transacciones atómicas via RPC para consecutivos
 
-#### Módulo de Cartera (Fase 5) - Completado
-- ✅ Cuentas por Cobrar con creación automática al aprobar factura de venta
-- ✅ Cuentas por Pagar con creación automática al aprobar factura de compra
-- ✅ **Tabla de Antigüedad de Cartera** (Corriente, 1-30, 31-60, 61-90, +90 días)
-- ✅ Registro de pagos parciales/totales
-- ✅ **Alertas de vencimiento** (código de colores por severidad)
-- ✅ Dashboard con estadísticas
+#### Módulo de Cartera
+- ✅ Cuentas por Cobrar/Pagar automáticas
+- ✅ Tabla de Antigüedad de Cartera
+- ✅ Alertas de vencimiento
 
-#### Módulo de Tesorería (Fase 3) - Completado
+#### Módulo de Tesorería
 - ✅ Gestión de cuentas bancarias
 - ✅ Registro de movimientos bancarios
-- ✅ Saldos en tiempo real
 
-#### Módulo de Reportes Financieros - Completado
-- ✅ **Cartera por Clientes** - Cuentas por cobrar agrupadas
-- ✅ **Cartera por Proveedores** - Cuentas por pagar agrupadas
-- ✅ **Balance de Comprobación** - Sumas y saldos de todas las cuentas
-- ✅ **Balance General** - Estado de Situación Financiera
-- ✅ **Estado de Resultados** - Ingresos, gastos y utilidad del período
-- ✅ Funcionalidad de impresión
+#### Módulo de Reportes Financieros
+- ✅ Cartera por Clientes/Proveedores
+- ✅ Balance de Comprobación
+- ✅ Balance General
+- ✅ Estado de Resultados
+- ✅ **NUEVO**: Descarga en PDF de todos los reportes
 
-#### Módulo de Cierre Contable - Completado
-- ✅ Vista de 12 meses con estados (OPEN/CLOSED/LOCKED)
-- ✅ **Validación de período** antes de cerrar (verifica asientos balanceados, borradores)
-- ✅ **Cierre de período** con notas opcionales
-- ✅ **Reapertura de período** (si no está bloqueado)
-- ✅ **Bloqueo permanente** de período
-- ✅ Resumen anual de estados
+#### Módulo de Cierre Contable
+- ✅ Vista de 12 meses con estados
+- ✅ Validación de período
+- ✅ Cierre/Reapertura/Bloqueo
+- ✅ **NUEVO**: Diálogos modernos shadcn (sin alert/confirm)
 
-#### Datos Semilla
-- ✅ PUC básico colombiano (51 cuentas)
-- ✅ Terceros de prueba (3 clientes, 2 proveedores, 1 mixto)
-- ✅ Página de Configuración para inicializar datos (/configuracion)
+### Mejoras UX Implementadas (Julio 2026)
+- ✅ **Mensajes de error en español** - Errores de Supabase Auth mapeados
+- ✅ **Descarga PDF** - Todos los reportes financieros
+- ✅ **Diálogos modernos** - shadcn Dialog y Toast en toda la app
+- ✅ **Transacciones atómicas** - RPC para consecutivos de facturas
 
 ### Base de Datos (Supabase)
-Tablas principales:
-- `puc_accounts` - Plan Único de Cuentas
-- `third_parties` - Terceros
-- `journal_entries` - Asientos contables
-- `journal_lines` - Líneas de asientos
-- `invoices` - Facturas
-- `invoice_lines` - Líneas de factura
-- `receivables` - Cuentas por cobrar
-- `payables` - Cuentas por pagar
-- `receivable_payments` - Pagos recibidos
-- `payable_payments` - Pagos realizados
-- `document_sequences` - Consecutivos
-- `bank_accounts` - Cuentas bancarias
-- `bank_movements` - Movimientos bancarios
-- `accounting_periods` - Períodos contables (auto-creados)
+Tablas principales: puc_accounts, third_parties, journal_entries, journal_lines, invoices, invoice_lines, receivables, payables, bank_accounts, bank_movements, accounting_periods, document_sequences
 
 ## Arquitectura
 
@@ -84,35 +61,22 @@ Tablas principales:
 - **Base de Datos**: Supabase (PostgreSQL)
 - **Auth**: Supabase Auth
 - **Styling**: Tailwind CSS 3.4
-- **Icons**: Lucide React
+- **UI Components**: shadcn/ui (Dialog, Toast)
 - **PDF**: @react-pdf/renderer
 
 ### Estructura de Archivos
 ```
 /app/src/
-├── actions/
-│   ├── invoices.ts    # Facturación + Contabilización automática
-│   ├── cartera.ts     # Cartera (CxC, CxP, pagos)
-│   ├── tesoreria.ts   # Tesorería (Bancos, movimientos)
-│   ├── reportes.ts    # Reportes financieros
-│   ├── cierre.ts      # Cierre contable
-│   ├── seed.ts        # Datos semilla
-│   └── ...
-├── app/(dashboard)/
-│   ├── facturas/      # Módulo Facturación
-│   ├── cartera/       # Módulo Cartera
-│   ├── tesoreria/     # Módulo Tesorería
-│   ├── reportes/      # Módulo Reportes
-│   ├── cierre/        # Módulo Cierre Contable
-│   ├── configuracion/ # Inicializar datos
-│   └── ...
-├── components/
-│   ├── facturas/      # invoices-table, invoice-form, invoice-detail, invoice-pdf
-│   ├── cartera/       # cartera-stats, aging-table, documents-table, alerts-panel
-│   ├── reportes/      # balance-sheet, income-statement, trial-balance, cartera-report
-│   └── ...
-└── lib/utils/
-    └── invoice-calc.ts # Cálculos de totales e IVA
+├── actions/          # Server Actions
+├── app/(dashboard)/  # UI Pages
+├── components/       # React Components
+│   ├── ui/          # shadcn components
+│   └── reportes/    # Report components + PDFs
+├── hooks/           # Custom hooks (use-toast)
+└── lib/
+    ├── utils.ts     # cn() utility
+    ├── error-messages.ts  # Spanish error mapper
+    └── utils/       # Invoice calculations
 ```
 
 ## Credenciales de Prueba
@@ -123,22 +87,29 @@ Tablas principales:
 - URL: https://fitjpyqrecgvlrlpwipn.supabase.co
 
 ## Testing Status
-- ✅ E2E Testing: 100% de flujos pasaron (Login, Dashboard, Reportes, Cierre, Tesorería, Facturas, Cartera)
-- ✅ Tailwind CSS configurado y funcionando
+- ✅ E2E Testing: 100% (7/7 test cases pass)
+- ✅ Tailwind CSS funcionando
 - ✅ Server Actions validados
+- ✅ PDF generation validado
+- ✅ Toast notifications validadas
 
 ## Backlog Priorizado
 
-### P1 - Alta Prioridad (Data Integrity)
-- [ ] Wrap invoice creation en transacción Postgres RPC (race condition en document_sequences)
-- [ ] Mejorar manejo de errores en Server Actions (retornar {success, error} en vez de throw)
-
-### P2 - Media Prioridad (UX)
-- [ ] Reemplazar alert()/confirm() con shadcn Dialog/Toast
-- [ ] Mapear errores de Supabase Auth a mensajes en español
+### P2 - Media Prioridad
+- [ ] Incluir Utilidad del Ejercicio en Patrimonio del Balance General (actualmente muestra diferencia)
+- [ ] Ejecutar RPC `get_next_invoice_number` en Supabase Dashboard
 
 ### P3 - Baja Prioridad (Futuro)
-- [ ] Módulo de Nómina (alta complejidad por legislación colombiana)
-- [ ] Integración con Facturación Electrónica DIAN
-- [ ] Reportes de Información Exógena (anuales)
+- [ ] Módulo de Nómina
+- [ ] Integración Facturación Electrónica DIAN
+- [ ] Reportes de Información Exógena
 - [ ] Control de acceso basado en roles (RBAC)
+
+## Changelog
+
+### 2026-07-20
+- Implementados mensajes de error en español para login
+- Agregado descarga PDF para todos los reportes financieros
+- Reemplazados alert/confirm con shadcn Dialog y Toast
+- Creada función RPC para transacciones atómicas en facturas
+- Testing E2E: 100% pass rate
