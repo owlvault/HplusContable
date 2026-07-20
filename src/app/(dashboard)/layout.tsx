@@ -21,6 +21,7 @@ export default async function DashboardLayout({
         { href: '/asientos', label: 'Asientos', icon: '📝' },
         { href: '/comprobantes', label: 'Comprobantes', icon: '📋' },
         { href: '/reportes', label: 'Reportes', icon: '📈' },
+        { href: '/cierre', label: 'Cierre Contable', icon: '🔒' },
     ];
 
     return (
