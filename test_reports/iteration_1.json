@@ -1,0 +1,127 @@
+{
+  "summary": "BLOCKER encountered: The configured Supabase project (yatmqefliwhkoejmwdvt.supabase.co) does not exist / DNS returns NXDOMAIN. This makes it impossible to test ANY invoicing flow (login, list, create, approve, detail) because both Next.js server actions (from container) and client-side supabase calls (from Playwright browser) fail with net::ERR_NAME_NOT_RESOLVED. Login submission surfaces a red 'Failed to fetch' error and Google's DNS resolver confirms Status=3 (NXDOMAIN). All /facturas* routes return HTTP 500 because the server-side data fetchers cannot reach Supabase. UI shell (login page) renders correctly. A thorough static code review of the invoicing module was performed; several bugs and gaps were found but functional/E2E validation is impossible until Supabase is fixed.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "supabase project (all endpoints)",
+        "issue": "Supabase project 'yatmqefliwhkoejmwdvt.supabase.co' does not exist. Google DNS (dns.google/resolve) returns Status:3 NXDOMAIN. curl from container: 'Could not resolve host'. Playwright browser: net::ERR_NAME_NOT_RESOLVED on POST /auth/v1/token. Impact: 100% of authenticated flows are broken. All /facturas* pages return HTTP 500.",
+        "priority": "CRITICAL"
+      },
+      {
+        "endpoint": "action getNextInvoiceNumber (src/actions/invoices.ts:62)",
+        "issue": "Race condition: read-then-update on document_sequences is NOT atomic. Two concurrent createInvoice calls with the same prefix will get the same number, then hit the invoices unique index (prefix, number) and one will fail. Should use an RPC / stored procedure with UPDATE ... RETURNING or a transaction.",
+        "priority": "HIGH"
+      },
+      {
+        "endpoint": "action createInvoice (src/actions/invoices.ts:190)",
+        "issue": "If invoice_lines INSERT fails, the manual rollback (delete invoice) is best-effort and racy. The document_sequences row has already been advanced -> the invoice number is permanently burned. Should wrap in a transaction (RPC).",
+        "priority": "HIGH"
+      },
+      {
+        "endpoint": "action approveInvoice (src/actions/invoices.ts:337)",
+        "issue": "Supabase .eq('state','DRAFT') gate does NOT throw when 0 rows are updated (already APPROVED). Function returns { success: true } even though nothing changed. Should check returned data.length or use a RPC.",
+        "priority": "MEDIUM"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "action updateInvoice",
+        "issue": "Spreads invoiceData before the recomputed totals — safe today because of key order, but fragile; also the retention fields are read from partial invoiceData without falling back to existing DB values, so a partial update that omits retentions silently resets total to (subtotal+iva). Should merge with existing row."
+      },
+      {
+        "endpoint": "action getInvoiceStats",
+        "issue": "No .in() filter — pulls ALL invoices in one query. Will be slow at scale. Consider server-side aggregate SQL."
+      },
+      {
+        "endpoint": "action cancelInvoice",
+        "issue": "Overwrites `notes` with the cancellation reason, losing any prior observations. Should append or use a separate cancel_reason column."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "middleware.ts (src/middleware.ts + src/lib/supabase/middleware.ts)",
+        "issue": "/facturas is NOT in protectedPaths list. Currently only ['/dashboard','/puc','/terceros','/asientos','/reportes','/comprobantes']. An unauthenticated user is not redirected from /facturas or /facturas/nueva or /facturas/[id]. The requests still 500 today (because server action fails without auth), but this is a security hole once auth cookies are optional.",
+        "selector": "n/a",
+        "priority": "HIGH"
+      },
+      {
+        "component": "InvoiceForm (invoice-form.tsx)",
+        "issue": "Uses browser alert()/prompt() for validation and errors – poor UX. No inline field validation. On success it router.push('/facturas') without a toast; user gets no confirmation.",
+        "selector": "form",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "InvoiceForm submit buttons",
+        "issue": "The 'Guardar Borrador' button is type='submit' so pressing Enter anywhere in the form saves as DRAFT (expected). But 'Guardar y Aprobar' is type='button' and its click handler calls handleSubmit with the raw click event — passing a MouseEvent where a FormEvent is expected. e.preventDefault() still works but the type cast (e as any) is a code smell and could mask real bugs.",
+        "selector": "[data-testid='save-approve-btn']",
+        "priority": "LOW"
+      },
+      {
+        "component": "InvoicesTable",
+        "issue": "Two 'Nueva Factura' buttons appear on /facturas — one inside the VENTA table header and one inside the COMPRA table header. Both use data-testid='new-invoice-btn' (duplicate ID). Playwright selectors matching data-testid='new-invoice-btn' would be ambiguous. Should suffix by type.",
+        "selector": "[data-testid='new-invoice-btn']",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "LoginPage",
+        "issue": "Error banner shows raw Supabase error strings such as 'Failed to fetch' — not user friendly. Should map to Spanish messages.",
+        "selector": "[data-testid='login-submit-button']",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Login (client-side supabase.auth.signInWithPassword)",
+        "issue": "Confirmed failing with net::ERR_NAME_NOT_RESOLVED because Supabase host does not exist. Red banner 'Failed to fetch' visible.",
+        "affected_selectors": ["[data-testid='login-submit-button']"]
+      },
+      {
+        "flow": "List Invoices (server action getInvoices)",
+        "issue": "Route /facturas returns HTTP 500 due to Supabase connectivity failure. Cannot render tables.",
+        "affected_selectors": ["[data-testid='facturas-page']", "[data-testid='invoices-table']"]
+      },
+      {
+        "flow": "Create/Approve/Detail",
+        "issue": "Not testable because prerequisite pages 500 and login cannot succeed."
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "Login",
+        "issues": ["Renders correctly; card centered; error banner has good contrast (red on light red)."]
+      }
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "P0 (blocker): Verify the Supabase project URL. `yatmqefliwhkoejmwdvt.supabase.co` returns NXDOMAIN from Google DNS. Either (a) provision the project, (b) update /app/.env with the correct NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY, or (c) confirm that a different project is expected. Until then NO functional testing of any module (not just facturas) can be performed.",
+    "P0 (blocker): Once Supabase is reachable, seed at least one client (is_client=true) and one provider (is_provider=true) in third_parties, and confirm the document_sequences rows exist for prefixes FV and FC so createInvoice can succeed.",
+    "P1 (security): Add '/facturas' to protectedPaths in src/lib/supabase/middleware.ts so unauthenticated users are redirected to /login instead of hitting 500 pages.",
+    "P1 (data integrity): Move getNextInvoiceNumber + invoice insertion into a Postgres RPC/transaction to avoid the read-modify-write race and orphaned sequence numbers on failure.",
+    "P1 (UX/testing): Give the two 'Nueva Factura' buttons distinct data-testids (e.g. new-invoice-btn-VENTA / new-invoice-btn-COMPRA) so Playwright / users can differentiate.",
+    "P2: Replace alert()/prompt()/confirm() in invoice-form.tsx and invoices-table.tsx with the project's shadcn/ui Dialog + Toast primitives for consistent UX.",
+    "P2: In approveInvoice, verify at least one row was updated before returning success (Supabase returns count when { count: 'exact' } option is used)."
+  ],
+  "critical_code_review_comments": [
+    "Non-atomic invoice numbering + non-transactional invoice+lines insert (data corruption risk).",
+    "Missing /facturas in middleware protectedPaths (security).",
+    "Duplicate data-testid on two 'Nueva Factura' buttons (testability + a11y).",
+    "cancelInvoice overwrites notes with cancellation reason (data loss).",
+    "updateInvoice does not preserve existing retention/date/third_party when doing a partial update — silent data loss risk.",
+    "Client-side supabase auth surfaces raw English 'Failed to fetch' — need error mapping.",
+    "invoice-form uses alert() for validation — poor UX and untestable via a11y roles."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "0% (blocked - Supabase project does not exist)",
+    "frontend": "10% (only static login page renders; every authenticated route returns 500)"
+  },
+  "test_credentials": "admin@digikawsay.com / Admin123! — cannot verify because Supabase project resolves to NXDOMAIN.",
+  "seed_data_creation": "None — Supabase unreachable so no seed data could be inserted.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Do NOT waste time attempting UI/API tests until the Supabase URL in /app/.env is verified. Reproduce quickly: `curl -s 'https://dns.google/resolve?name=<PROJECT>.supabase.co&type=A'` — if Status=3 the project is gone. Also confirm middleware.ts protectedPaths includes '/facturas'. Playwright browser sits on the same DNS network as the container, so any host the container cannot resolve, Playwright also cannot resolve. Seed data required in Supabase for a full E2E: (1) auth user admin@digikawsay.com verified, (2) at least one third_party with is_client=true and one with is_provider=true, (3) rows in document_sequences for prefixes FV and FC.",
+  "rca of the issue": "Root cause: NEXT_PUBLIC_SUPABASE_URL in /app/.env points to a Supabase project reference 'yatmqefliwhkoejmwdvt' that does not exist. Evidence: (1) `getent hosts yatmqefliwhkoejmwdvt.supabase.co` → no output. (2) `curl https://dns.google/resolve?name=yatmqefliwhkoejmwdvt.supabase.co&type=A` → {\"Status\":3, ...} = NXDOMAIN. (3) Playwright browser: `Failed to load resource: net::ERR_NAME_NOT_RESOLVED` for POST https://yatmqefliwhkoejmwdvt.supabase.co/auth/v1/token?grant_type=password. Reproduction: open https://digicfo-microserv.preview.emergentagent.com/login, submit any credentials → red 'Failed to fetch' banner. Mitigation: (a) create the Supabase project, or (b) update /app/.env with the correct project URL + anon key and `sudo supervisorctl restart frontend`. After that all downstream tests can proceed."
+}

@@ -15,8 +15,9 @@ export default async function DashboardLayout({
         { href: '/dashboard', label: 'Dashboard', icon: '📊' },
         { href: '/puc', label: 'Plan de Cuentas', icon: '📖' },
         { href: '/terceros', label: 'Terceros', icon: '👥' },
+        { href: '/facturas', label: 'Facturación', icon: '🧾' },
         { href: '/asientos', label: 'Asientos', icon: '📝' },
-        { href: '/comprobantes', label: 'Comprobantes', icon: '🧾' },
+        { href: '/comprobantes', label: 'Comprobantes', icon: '📋' },
         { href: '/reportes', label: 'Reportes', icon: '📈' },
     ];
 
