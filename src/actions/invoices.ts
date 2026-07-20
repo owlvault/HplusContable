@@ -217,7 +217,7 @@ export async function createInvoice(invoiceData: Omit<Invoice, 'id' | 'number'>)
             number,
             type: invoiceData.type,
             date: invoiceData.date,
-            due_date: invoiceData.due_date,
+            due_date: invoiceData.due_date || null,
             third_party_id: invoiceData.third_party_id,
             subtotal: totals.subtotal,
             discount: totals.discount,
@@ -229,7 +229,7 @@ export async function createInvoice(invoiceData: Omit<Invoice, 'id' | 'number'>)
             retention_ica: invoiceData.retention_ica || 0,
             total: totals.total - (invoiceData.retention_source || 0) - (invoiceData.retention_iva || 0) - (invoiceData.retention_ica || 0),
             state: invoiceData.state || 'DRAFT',
-            notes: invoiceData.notes,
+            notes: invoiceData.notes || null,
             created_by: user.id,
         })
         .select()
@@ -341,28 +341,281 @@ export async function updateInvoice(id: string, invoiceData: Partial<Invoice>) {
     return { success: true };
 }
 
-// Approve invoice
+// Approve invoice with automatic accounting entry and receivable/payable
 export async function approveInvoice(id: string) {
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    const { data, error } = await supabase
+    // Get invoice with lines
+    const { data: invoice, error: fetchError } = await supabase
         .from('invoices')
-        .update({ state: 'APPROVED', updated_at: new Date().toISOString() })
+        .select('*')
         .eq('id', id)
         .eq('state', 'DRAFT')
-        .select();
+        .single();
 
-    if (error) {
-        throw new Error('Error al aprobar factura');
+    if (fetchError || !invoice) {
+        throw new Error('La factura no se puede aprobar (ya está aprobada o no existe)');
     }
 
-    if (!data || data.length === 0) {
-        throw new Error('La factura no se puede aprobar (ya está aprobada o no existe)');
+    // Create journal entry for the invoice
+    const journalEntry = await createJournalEntryForInvoice(supabase, invoice, user?.id);
+
+    // Create receivable or payable
+    if (invoice.type === 'VENTA') {
+        await createReceivableForInvoice(supabase, invoice);
+    } else {
+        await createPayableForInvoice(supabase, invoice);
+    }
+
+    // Update invoice with journal entry reference
+    const { error: updateError } = await supabase
+        .from('invoices')
+        .update({ 
+            state: 'APPROVED', 
+            journal_entry_id: journalEntry?.id,
+            updated_at: new Date().toISOString() 
+        })
+        .eq('id', id);
+
+    if (updateError) {
+        throw new Error('Error al aprobar factura');
     }
 
     revalidatePath('/facturas');
     revalidatePath(`/facturas/${id}`);
-    return { success: true };
+    revalidatePath('/cartera');
+    revalidatePath('/asientos');
+    return { success: true, journalEntryId: journalEntry?.id };
+}
+
+// Create journal entry for invoice
+async function createJournalEntryForInvoice(supabase: any, invoice: any, userId?: string) {
+    const invoiceNumber = `${invoice.prefix}-${String(invoice.number).padStart(5, '0')}`;
+    
+    // Create journal entry
+    const { data: entry, error: entryError } = await supabase
+        .from('journal_entries')
+        .insert({
+            date: invoice.date,
+            description: `Contabilización ${invoice.type === 'VENTA' ? 'Factura de Venta' : 'Factura de Compra'} ${invoiceNumber}`,
+            state: 'APROBADO',
+            created_by: userId,
+        })
+        .select()
+        .single();
+
+    if (entryError) {
+        console.error('Error creating journal entry:', entryError);
+        return null;
+    }
+
+    // Create journal lines based on invoice type
+    const lines = [];
+    const subtotalAfterDiscount = invoice.subtotal - invoice.discount;
+
+    if (invoice.type === 'VENTA') {
+        // FACTURA DE VENTA
+        // Débito: Clientes (1305) por el total
+        lines.push({
+            entry_id: entry.id,
+            account_code: '130505', // Clientes Nacionales
+            third_party_id: invoice.third_party_id,
+            debit: invoice.total,
+            credit: 0,
+            description: `Cliente - ${invoiceNumber}`,
+        });
+
+        // Crédito: Ingresos por el subtotal (sin IVA)
+        lines.push({
+            entry_id: entry.id,
+            account_code: '413505', // Venta de Mercancías
+            debit: 0,
+            credit: subtotalAfterDiscount,
+            description: `Ingreso - ${invoiceNumber}`,
+        });
+
+        // Crédito: IVA 19% si aplica
+        if (invoice.iva_19 > 0) {
+            lines.push({
+                entry_id: entry.id,
+                account_code: '240805', // IVA Generado 19%
+                debit: 0,
+                credit: invoice.iva_19,
+                description: `IVA 19% - ${invoiceNumber}`,
+            });
+        }
+
+        // Crédito: IVA 5% si aplica
+        if (invoice.iva_5 > 0) {
+            lines.push({
+                entry_id: entry.id,
+                account_code: '240810', // IVA Generado 5%
+                debit: 0,
+                credit: invoice.iva_5,
+                description: `IVA 5% - ${invoiceNumber}`,
+            });
+        }
+
+        // Débito: Retención en la Fuente (activo) si aplica
+        if (invoice.retention_source > 0) {
+            lines.push({
+                entry_id: entry.id,
+                account_code: '135515', // Retención en la Fuente
+                debit: invoice.retention_source,
+                credit: 0,
+                description: `Rete Fuente - ${invoiceNumber}`,
+            });
+            // Ajustar el débito de clientes
+            lines[0].debit -= invoice.retention_source;
+        }
+
+        // Débito: Retención de IVA (activo) si aplica
+        if (invoice.retention_iva > 0) {
+            lines.push({
+                entry_id: entry.id,
+                account_code: '135517', // IVA Retenido
+                debit: invoice.retention_iva,
+                credit: 0,
+                description: `Rete IVA - ${invoiceNumber}`,
+            });
+            // Ajustar el débito de clientes
+            lines[0].debit -= invoice.retention_iva;
+        }
+
+    } else {
+        // FACTURA DE COMPRA
+        // Débito: Gasto o Costo por el subtotal
+        lines.push({
+            entry_id: entry.id,
+            account_code: '519595', // Otros Gastos
+            debit: subtotalAfterDiscount,
+            credit: 0,
+            description: `Compra - ${invoiceNumber}`,
+        });
+
+        // Débito: IVA Descontable (si aplica, sería cuenta 2408 en crédito para el proveedor)
+        // Para simplificar, el IVA en compras se descuenta
+        if (invoice.iva_19 > 0 || invoice.iva_5 > 0) {
+            const totalIva = (invoice.iva_19 || 0) + (invoice.iva_5 || 0);
+            lines.push({
+                entry_id: entry.id,
+                account_code: '240805', // IVA por pagar (se netea)
+                debit: totalIva,
+                credit: 0,
+                description: `IVA Descontable - ${invoiceNumber}`,
+            });
+        }
+
+        // Crédito: Proveedores por el total
+        lines.push({
+            entry_id: entry.id,
+            account_code: '220505', // Proveedores Nacionales
+            third_party_id: invoice.third_party_id,
+            debit: 0,
+            credit: invoice.total,
+            description: `Proveedor - ${invoiceNumber}`,
+        });
+
+        // Crédito: Retención en la Fuente (pasivo) si aplica
+        if (invoice.retention_source > 0) {
+            lines.push({
+                entry_id: entry.id,
+                account_code: '236515', // Retención Honorarios
+                debit: 0,
+                credit: invoice.retention_source,
+                description: `Rete Fuente - ${invoiceNumber}`,
+            });
+            // Ajustar el crédito de proveedores
+            const providerLine = lines.find(l => l.account_code === '220505');
+            if (providerLine) providerLine.credit -= invoice.retention_source;
+        }
+
+        // Crédito: Retención de IVA (pasivo) si aplica
+        if (invoice.retention_iva > 0) {
+            lines.push({
+                entry_id: entry.id,
+                account_code: '236701', // IVA Retenido
+                debit: 0,
+                credit: invoice.retention_iva,
+                description: `Rete IVA - ${invoiceNumber}`,
+            });
+            // Ajustar el crédito de proveedores
+            const providerLine = lines.find(l => l.account_code === '220505');
+            if (providerLine) providerLine.credit -= invoice.retention_iva;
+        }
+
+        // Crédito: Retención de ICA (pasivo) si aplica
+        if (invoice.retention_ica > 0) {
+            lines.push({
+                entry_id: entry.id,
+                account_code: '236801', // ICA Retenido
+                debit: 0,
+                credit: invoice.retention_ica,
+                description: `Rete ICA - ${invoiceNumber}`,
+            });
+            // Ajustar el crédito de proveedores
+            const providerLine = lines.find(l => l.account_code === '220505');
+            if (providerLine) providerLine.credit -= invoice.retention_ica;
+        }
+    }
+
+    // Insert journal lines
+    const { error: linesError } = await supabase
+        .from('journal_lines')
+        .insert(lines);
+
+    if (linesError) {
+        console.error('Error creating journal lines:', linesError);
+    }
+
+    return entry;
+}
+
+// Create receivable for sales invoice
+async function createReceivableForInvoice(supabase: any, invoice: any) {
+    const { error } = await supabase
+        .from('receivables')
+        .insert({
+            third_party_id: invoice.third_party_id,
+            invoice_id: invoice.id,
+            document_type: 'FACTURA',
+            document_number: `${invoice.prefix}-${String(invoice.number).padStart(5, '0')}`,
+            issue_date: invoice.date,
+            due_date: invoice.due_date || invoice.date,
+            original_amount: invoice.total,
+            paid_amount: 0,
+            balance: invoice.total,
+            days_overdue: 0,
+            status: 'PENDING',
+        });
+
+    if (error) {
+        console.error('Error creating receivable:', error);
+    }
+}
+
+// Create payable for purchase invoice
+async function createPayableForInvoice(supabase: any, invoice: any) {
+    const { error } = await supabase
+        .from('payables')
+        .insert({
+            third_party_id: invoice.third_party_id,
+            invoice_id: invoice.id,
+            document_type: 'FACTURA',
+            document_number: `${invoice.prefix}-${String(invoice.number).padStart(5, '0')}`,
+            issue_date: invoice.date,
+            due_date: invoice.due_date || invoice.date,
+            original_amount: invoice.total,
+            paid_amount: 0,
+            balance: invoice.total,
+            days_overdue: 0,
+            status: 'PENDING',
+        });
+
+    if (error) {
+        console.error('Error creating payable:', error);
+    }
 }
 
 // Cancel invoice
