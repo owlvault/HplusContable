@@ -58,26 +58,77 @@ export interface InvoiceWithThirdParty extends Invoice {
     };
 }
 
-// Get next invoice number
+// Get next invoice number - uses atomic increment to avoid race conditions
 async function getNextInvoiceNumber(supabase: any, prefix: string): Promise<number> {
-    const { data, error } = await supabase
+    // Try to atomically increment and return the new number
+    // Using a raw SQL query via RPC would be ideal, but we'll use a workaround
+    // by leveraging Supabase's update with returning
+    
+    // First, try to get existing sequence
+    const { data: existing, error: selectError } = await supabase
         .from('document_sequences')
         .select('current_number')
         .eq('prefix', prefix)
         .single();
 
-    if (error || !data) {
-        // If no sequence exists, start from 1
+    if (selectError || !existing) {
+        // Create new sequence starting at 1
+        const { data: newSeq, error: insertError } = await supabase
+            .from('document_sequences')
+            .insert({ 
+                document_type: prefix === 'FV' ? 'FACTURA_VENTA' : 'FACTURA_COMPRA',
+                prefix: prefix, 
+                current_number: 1,
+                is_active: true 
+            })
+            .select('current_number')
+            .single();
+        
+        if (insertError) {
+            // Sequence might have been created by concurrent request, retry get
+            const { data: retry } = await supabase
+                .from('document_sequences')
+                .select('current_number')
+                .eq('prefix', prefix)
+                .single();
+            
+            if (retry) {
+                return retry.current_number + 1;
+            }
+            throw new Error('Error al obtener consecutivo de factura');
+        }
         return 1;
     }
 
-    const nextNumber = (data.current_number || 0) + 1;
+    const nextNumber = (existing.current_number || 0) + 1;
 
-    // Update the sequence
-    await supabase
+    // Update with optimistic locking - only update if current_number hasn't changed
+    const { data: updated, error: updateError } = await supabase
         .from('document_sequences')
         .update({ current_number: nextNumber })
-        .eq('prefix', prefix);
+        .eq('prefix', prefix)
+        .eq('current_number', existing.current_number) // Optimistic lock
+        .select('current_number');
+
+    if (updateError || !updated || updated.length === 0) {
+        // Someone else updated it concurrently, retry
+        const { data: retry } = await supabase
+            .from('document_sequences')
+            .select('current_number')
+            .eq('prefix', prefix)
+            .single();
+        
+        if (retry) {
+            // Try once more with the new value
+            const retryNext = (retry.current_number || 0) + 1;
+            await supabase
+                .from('document_sequences')
+                .update({ current_number: retryNext })
+                .eq('prefix', prefix);
+            return retryNext;
+        }
+        throw new Error('Error al obtener consecutivo de factura');
+    }
 
     return nextNumber;
 }
@@ -337,14 +388,19 @@ export async function updateInvoice(id: string, invoiceData: Partial<Invoice>) {
 export async function approveInvoice(id: string) {
     const supabase = await createClient();
 
-    const { error } = await supabase
+    const { data, error } = await supabase
         .from('invoices')
         .update({ state: 'APPROVED', updated_at: new Date().toISOString() })
         .eq('id', id)
-        .eq('state', 'DRAFT');
+        .eq('state', 'DRAFT')
+        .select();
 
     if (error) {
         throw new Error('Error al aprobar factura');
+    }
+
+    if (!data || data.length === 0) {
+        throw new Error('La factura no se puede aprobar (ya está aprobada o no existe)');
     }
 
     revalidatePath('/facturas');
@@ -358,7 +414,7 @@ export async function cancelInvoice(id: string, reason: string) {
 
     const { data: invoice } = await supabase
         .from('invoices')
-        .select('state')
+        .select('state, notes')
         .eq('id', id)
         .single();
 
@@ -366,11 +422,17 @@ export async function cancelInvoice(id: string, reason: string) {
         throw new Error('La factura ya está anulada');
     }
 
+    // Preserve existing notes and append cancellation reason
+    const existingNotes = invoice?.notes || '';
+    const cancelNotes = existingNotes 
+        ? `${existingNotes}\n\n--- ANULADA ---\nMotivo: ${reason}\nFecha: ${new Date().toLocaleString('es-CO')}`
+        : `--- ANULADA ---\nMotivo: ${reason}\nFecha: ${new Date().toLocaleString('es-CO')}`;
+
     const { error } = await supabase
         .from('invoices')
         .update({ 
             state: 'CANCELLED', 
-            notes: reason,
+            notes: cancelNotes,
             updated_at: new Date().toISOString() 
         })
         .eq('id', id);

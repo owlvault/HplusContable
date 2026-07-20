@@ -93,7 +93,7 @@ export function InvoicesTable({ invoices, type }: InvoicesTableProps) {
                 <button
                     onClick={() => router.push(`/facturas/nueva?type=${type}`)}
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    data-testid="new-invoice-btn"
+                    data-testid={`new-invoice-btn-${type}`}
                 >
                     <Plus size={18} />
                     Nueva Factura
