@@ -12,11 +12,17 @@ import { CarteraReport } from '@/components/reportes/cartera-report';
 import { BalanceSheet } from '@/components/reportes/balance-sheet';
 import { IncomeStatement } from '@/components/reportes/income-statement';
 import { TrialBalance } from '@/components/reportes/trial-balance';
-import { FileText, Users, Building2, BarChart3, PieChart, Loader2, Printer } from 'lucide-react';
+import { downloadBalanceSheetPDF } from '@/components/reportes/balance-sheet-pdf';
+import { downloadIncomeStatementPDF } from '@/components/reportes/income-statement-pdf';
+import { downloadTrialBalancePDF } from '@/components/reportes/trial-balance-pdf';
+import { downloadCarteraReportPDF } from '@/components/reportes/cartera-report-pdf';
+import { FileText, Users, Building2, BarChart3, PieChart, Loader2, Printer, Download } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 type ReportType = 'cartera-clientes' | 'cartera-proveedores' | 'balance-comprobacion' | 'balance-general' | 'estado-resultados';
 
 export default function ReportesPage() {
+    const { toast } = useToast();
     const [reportType, setReportType] = useState<ReportType>('cartera-clientes');
     const [year, setYear] = useState(new Date().getFullYear());
     const [month, setMonth] = useState(new Date().getMonth() + 1);
@@ -70,9 +76,18 @@ export default function ReportesPage() {
                     break;
             }
             setReportData(data);
+            toast({
+                title: 'Reporte generado',
+                description: `${reportOptions.find(r => r.id === reportType)?.label} cargado exitosamente`,
+                variant: 'success',
+            });
         } catch (error) {
             console.error('Error loading report:', error);
-            alert('Error al cargar el reporte');
+            toast({
+                title: 'Error',
+                description: 'No se pudo cargar el reporte. Intente de nuevo.',
+                variant: 'destructive',
+            });
         } finally {
             setLoading(false);
         }
@@ -80,6 +95,43 @@ export default function ReportesPage() {
 
     const handlePrint = () => {
         window.print();
+    };
+
+    const handleDownloadPDF = () => {
+        if (!reportData) return;
+        
+        const periodStr = getPeriodString();
+        const dateStr = new Date().toISOString().split('T')[0];
+        
+        switch (reportType) {
+            case 'cartera-clientes':
+                downloadCarteraReportPDF('Reporte de Cartera por Clientes', reportData, 'receivable', `cartera-clientes-${dateStr}.pdf`);
+                break;
+            case 'cartera-proveedores':
+                downloadCarteraReportPDF('Reporte de Cartera por Proveedores', reportData, 'payable', `cartera-proveedores-${dateStr}.pdf`);
+                break;
+            case 'balance-comprobacion':
+                downloadTrialBalancePDF(reportData, periodStr, `balance-comprobacion-${month}-${year}.pdf`);
+                break;
+            case 'balance-general':
+                downloadBalanceSheetPDF({
+                    ...reportData,
+                    period: `Al ${new Date(year, month, 0).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}`
+                }, `balance-general-${month}-${year}.pdf`);
+                break;
+            case 'estado-resultados':
+                downloadIncomeStatementPDF({
+                    ...reportData,
+                    period: periodStr
+                }, `estado-resultados-${month}-${year}.pdf`);
+                break;
+        }
+        
+        toast({
+            title: 'PDF generado',
+            description: 'El archivo se ha descargado exitosamente',
+            variant: 'success',
+        });
     };
 
     const getPeriodString = () => {
@@ -171,13 +223,22 @@ export default function ReportesPage() {
                     </button>
                     
                     {reportData && (
-                        <button
-                            onClick={handlePrint}
-                            className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-                        >
-                            <Printer size={18} />
-                            Imprimir
-                        </button>
+                        <>
+                            <button
+                                onClick={handlePrint}
+                                className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                            >
+                                <Printer size={18} />
+                                Imprimir
+                            </button>
+                            <button
+                                onClick={handleDownloadPDF}
+                                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                            >
+                                <Download size={18} />
+                                Descargar PDF
+                            </button>
+                        </>
                     )}
                 </div>
             </div>
@@ -228,7 +289,7 @@ export default function ReportesPage() {
             {!reportData && !loading && (
                 <div className="bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 p-12 text-center print:hidden">
                     <FileText className="mx-auto text-gray-400 mb-4" size={48} />
-                    <p className="text-gray-500">Selecciona un tipo de reporte y haz clic en "Generar Reporte"</p>
+                    <p className="text-gray-500">Selecciona un tipo de reporte y haz clic en &quot;Generar Reporte&quot;</p>
                 </div>
             )}
         </div>

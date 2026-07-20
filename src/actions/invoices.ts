@@ -59,11 +59,18 @@ export interface InvoiceWithThirdParty extends Invoice {
     };
 }
 
-// Get next invoice number - uses atomic increment to avoid race conditions
+// Get next invoice number - uses atomic increment via RPC to avoid race conditions
 async function getNextInvoiceNumber(supabase: any, prefix: string): Promise<number> {
-    // Try to atomically increment and return the new number
-    // Using a raw SQL query via RPC would be ideal, but we'll use a workaround
-    // by leveraging Supabase's update with returning
+    // Try to use the RPC function first (atomic transaction)
+    const { data: rpcResult, error: rpcError } = await supabase
+        .rpc('get_next_invoice_number', { p_prefix: prefix });
+
+    if (!rpcError && rpcResult !== null) {
+        return rpcResult;
+    }
+
+    // Fallback to manual approach if RPC not available
+    console.warn('RPC get_next_invoice_number not available, using fallback');
     
     // First, try to get existing sequence
     const { data: existing, error: selectError } = await supabase

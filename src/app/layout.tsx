@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter, Outfit } from 'next/font/google';
 import './globals.css';
+import { Toaster } from '@/components/ui/toaster';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -34,7 +35,10 @@ export default function RootLayout({
           `
         }} />
       </head>
-      <body suppressHydrationWarning className={inter.className}>{children}</body>
+      <body suppressHydrationWarning className={inter.className}>
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }

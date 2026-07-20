@@ -1,0 +1,37 @@
+{
+  "summary": "Frontend E2E validation of the 4 improvements: (1) Spanish error messages on login, (2) PDF download on /reportes, (3) shadcn Dialog/Toast replacing browser alert/confirm, (4) Cierre validation. All 7 requested test cases PASS on the preview URL against the live Supabase project.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "getBalanceSheet (src/actions/reportes.ts)", "issue": "Balance General shows 'Diferencia: $ 5.000.000' because equity does not include current-period net income (Utilidad Neta of $5.000.000 from Estado de Resultados is not rolled into Patrimonio). Not a regression from this iteration but visible whenever the balance is rendered."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Reportes / Balance General", "issues": ["Toast 'PDF generado' renders correctly in bottom-right; PDF file downloads (balance-general-7-2026.pdf, 3058 bytes). No browser dialogs used."]},
+      {"screen": "Cierre Contable", "issues": ["12-month grid renders correctly with 12 'Validar' buttons; validation panel shows stats (Asientos / Total Débitos / Total Créditos / Borradores / Desbalanceados) and warnings (e.g. 'El período anterior (12/2025) aún está abierto'). Sidebar link 'Cierre Contable' now exists (fix from iteration_2 applied)."]},
+      {"screen": "Login", "issues": ["Wrong password now maps to Spanish 'Correo o contraseña incorrectos' via getSpanishErrorMessage — mapper is comprehensive (network + auth + password/email fallbacks)."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "P2 (accounting correctness): Include current-period Net Income in Patrimonio on Balance General so 'Diferencia' becomes 0 when books are balanced (or explicitly show 'Utilidad del Ejercicio' as an equity line). Currently a $5.000.000 difference is displayed even though A = P + P + Utilidad.",
+    "P3 (from iteration_1/2, still open): Wrap getNextInvoiceNumber + invoice insert in a Postgres RPC for atomic invoice numbering — main agent mentioned the RPC was added; not exercised in this iteration since no new invoices were created."
+  ],
+  "critical_code_review_comments": [
+    "Reportes and Cierre now consistently use useToast() and shadcn Dialog — no window.alert()/confirm() calls remain in these two pages (grep confirmed).",
+    "error-messages.ts covers exact + partial + fallback matches (password/email keywords) — good coverage for Supabase auth error surface.",
+    "cierre/page.tsx useEffect depends on [year] but calls loadSummary which is stable enough; React exhaustive-deps rule would flag this — minor.",
+    "reportes/page.tsx uses `any` for reportData (typescript hygiene, not blocking)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not_tested (frontend-only scope per request)", "frontend": "7/7 requested test cases PASS (100%)"},
+  "test_credentials": "admin@digikawsay.app / CalamarDorado9! — verified working",
+  "seed_data_creation": "None — used existing seed data (client Comercializadora XYZ Ltda, invoice FV-00002 $5.950.000, journal entry $5.000.000 on 413505).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "All 4 improvements verified working. Login shows Spanish errors; /reportes Balance General generates + downloads PDF (3KB) and shows 'PDF generado' toast; /cierre renders 12-month grid with 12 Validar buttons; clicking Validar surfaces the stats panel with warnings; no browser alert/confirm dialogs remain in reportes/cierre. One pre-existing accounting bug: Balance General shows Diferencia of $5.000.000 because net income is not rolled into equity. Preview URL: https://contabilidad-app-9.preview.emergentagent.com.",
+  "rca of the issue": "N/A — no bugs introduced. The Balance General 'Diferencia' is pre-existing: the balance sheet builder aggregates by PUC class (1=Activo, 2=Pasivo, 3=Patrimonio) but the current-period result closes from class 4 (Ingresos) and class 5/6 (Gastos) which never flow into Patrimonio until a period close journal is posted. Fix requires either (a) computing Utilidad del Ejercicio at build time and adding it as a Patrimonio line, or (b) requiring a period-close journal that debits 4/credits 3 (or 6/3)."
+}

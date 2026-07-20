@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { 
     getYearClosingSummary, 
     validatePeriodForClosing, 
@@ -10,6 +9,15 @@ import {
     lockAccountingPeriod
 } from '@/actions/cierre';
 import { Calendar, Lock, Unlock, CheckCircle, AlertTriangle, XCircle, Loader2, Shield } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 
 const MONTHS = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -17,7 +25,7 @@ const MONTHS = [
 ];
 
 export default function CierrePage() {
-    const router = useRouter();
+    const { toast } = useToast();
     const [year, setYear] = useState(new Date().getFullYear());
     const [summary, setSummary] = useState<any>(null);
     const [loading, setLoading] = useState(false);
@@ -26,6 +34,10 @@ export default function CierrePage() {
     const [validating, setValidating] = useState(false);
     const [closing, setClosing] = useState(false);
     const [closingNotes, setClosingNotes] = useState('');
+    
+    // Dialogs
+    const [confirmReopenDialog, setConfirmReopenDialog] = useState<{ open: boolean; month: number | null }>({ open: false, month: null });
+    const [confirmLockDialog, setConfirmLockDialog] = useState<{ open: boolean; month: number | null }>({ open: false, month: null });
 
     useEffect(() => {
         loadSummary();
@@ -38,6 +50,11 @@ export default function CierrePage() {
             setSummary(data);
         } catch (error) {
             console.error('Error loading summary:', error);
+            toast({
+                title: 'Error',
+                description: 'No se pudo cargar el resumen del año',
+                variant: 'destructive',
+            });
         } finally {
             setLoading(false);
         }
@@ -52,7 +69,11 @@ export default function CierrePage() {
             const result = await validatePeriodForClosing(year, month);
             setValidation(result);
         } catch (error: any) {
-            alert(error.message);
+            toast({
+                title: 'Error de validación',
+                description: error.message || 'No se pudo validar el período',
+                variant: 'destructive',
+            });
         } finally {
             setValidating(false);
         }
@@ -64,37 +85,67 @@ export default function CierrePage() {
         setClosing(true);
         try {
             await closeAccountingPeriod(selectedPeriod.year, selectedPeriod.month, closingNotes);
-            alert('Período cerrado exitosamente');
+            toast({
+                title: 'Período cerrado',
+                description: `${MONTHS[selectedPeriod.month - 1]} ${selectedPeriod.year} ha sido cerrado exitosamente`,
+                variant: 'success',
+            });
             setSelectedPeriod(null);
             setValidation(null);
             setClosingNotes('');
             loadSummary();
         } catch (error: any) {
-            alert(error.message);
+            toast({
+                title: 'Error al cerrar',
+                description: error.message || 'No se pudo cerrar el período',
+                variant: 'destructive',
+            });
         } finally {
             setClosing(false);
         }
     };
 
-    const handleReopen = async (month: number) => {
-        if (!confirm('¿Está seguro de reabrir este período?')) return;
+    const handleReopen = async () => {
+        if (!confirmReopenDialog.month) return;
+        const month = confirmReopenDialog.month;
+        setConfirmReopenDialog({ open: false, month: null });
         
         try {
             await reopenAccountingPeriod(year, month);
+            toast({
+                title: 'Período reabierto',
+                description: `${MONTHS[month - 1]} ${year} ha sido reabierto`,
+                variant: 'success',
+            });
             loadSummary();
         } catch (error: any) {
-            alert(error.message);
+            toast({
+                title: 'Error al reabrir',
+                description: error.message || 'No se pudo reabrir el período',
+                variant: 'destructive',
+            });
         }
     };
 
-    const handleLock = async (month: number) => {
-        if (!confirm('¿Está seguro de BLOQUEAR este período? Esta acción es PERMANENTE.')) return;
+    const handleLock = async () => {
+        if (!confirmLockDialog.month) return;
+        const month = confirmLockDialog.month;
+        setConfirmLockDialog({ open: false, month: null });
         
         try {
             await lockAccountingPeriod(year, month);
+            toast({
+                title: 'Período bloqueado',
+                description: `${MONTHS[month - 1]} ${year} ha sido bloqueado permanentemente`,
+                variant: 'success',
+            });
             loadSummary();
         } catch (error: any) {
-            alert(error.message);
+            toast({
+                title: 'Error al bloquear',
+                description: error.message || 'No se pudo bloquear el período',
+                variant: 'destructive',
+            });
         }
     };
 
@@ -211,13 +262,13 @@ export default function CierrePage() {
                                     {status === 'CLOSED' && (
                                         <>
                                             <button
-                                                onClick={() => handleReopen(month)}
+                                                onClick={() => setConfirmReopenDialog({ open: true, month })}
                                                 className="flex-1 px-3 py-1.5 text-sm bg-yellow-500 text-white rounded hover:bg-yellow-600"
                                             >
                                                 Reabrir
                                             </button>
                                             <button
-                                                onClick={() => handleLock(month)}
+                                                onClick={() => setConfirmLockDialog({ open: true, month })}
                                                 className="px-3 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700"
                                                 title="Bloquear permanentemente"
                                             >
@@ -365,6 +416,61 @@ export default function CierrePage() {
                     ) : null}
                 </div>
             )}
+
+            {/* Confirm Reopen Dialog */}
+            <Dialog open={confirmReopenDialog.open} onOpenChange={(open) => setConfirmReopenDialog({ ...confirmReopenDialog, open })}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Reabrir Período</DialogTitle>
+                        <DialogDescription>
+                            ¿Está seguro de reabrir el período de {confirmReopenDialog.month ? MONTHS[confirmReopenDialog.month - 1] : ''} {year}?
+                            Esto permitirá modificar los asientos contables de ese mes.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <button
+                            onClick={() => setConfirmReopenDialog({ open: false, month: null })}
+                            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleReopen}
+                            className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
+                        >
+                            Sí, Reabrir
+                        </button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Confirm Lock Dialog */}
+            <Dialog open={confirmLockDialog.open} onOpenChange={(open) => setConfirmLockDialog({ ...confirmLockDialog, open })}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="text-red-600">Bloquear Período Permanentemente</DialogTitle>
+                        <DialogDescription>
+                            <span className="text-red-600 font-medium">¡ATENCIÓN!</span> Esta acción es <strong>IRREVERSIBLE</strong>.
+                            <br /><br />
+                            El período de {confirmLockDialog.month ? MONTHS[confirmLockDialog.month - 1] : ''} {year} quedará bloqueado permanentemente y no podrá ser modificado ni reabierto.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <button
+                            onClick={() => setConfirmLockDialog({ open: false, month: null })}
+                            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleLock}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                        >
+                            Sí, Bloquear Permanentemente
+                        </button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
