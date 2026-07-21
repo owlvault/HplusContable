@@ -1,0 +1,43 @@
+{
+  "summary": "Tested new Nómina (payroll) module end-to-end per request. 5/6 requested test cases PASS. Only failure is that the payroll DETAIL page (route /nomina/[id]) does not exist, so after 'Generar Nómina' the app redirects to a 404 - the user cannot see the calculated detail (devengados, deducciones per employee, aportes empleador, etc). The payroll itself IS created correctly with correct Colombian calculations (Devengado $3.000.000, Deducciones $240.000 = 4% Salud + 4% Pensión, Neto $2.760.000, base $3M > 2 SMLV so no aux. transporte, base < 4 SMLV so no fondo solidaridad).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "src/actions/nomina.ts getPayrollSummary line 523", "issue": "Uses .single() when selecting the current-month payroll; if there are 0 rows (common) Supabase returns a PGRST116 error (logged) that is silently discarded. Prefer .maybeSingle() to avoid noisy error logs."},
+      {"endpoint": "src/actions/nomina.ts createPayroll line 288", "issue": "Uses .single() to check for an existing payroll and ignores the error, but PGRST116 will be logged each call. Same fix: use .maybeSingle()."},
+      {"endpoint": "src/actions/nomina.ts createPayroll", "issue": "Payroll header totals update after inserting lines does not check the .error - if it fails silently the header row will remain with totals=0 while lines exist. Recommend awaiting response and inspecting error."},
+      {"endpoint": "src/actions/nomina.ts calculatePayrollLine", "issue": "Auxilio de transporte is added to total_earnings (correct) but NOT excluded from the base for employer contributions (health_employer, pension_employer, arl, sena, icbf, caja). Actually current code uses ibc = salaryEarned + overtime + bonuses + commissions which correctly excludes aux. transporte, that is OK. However salaryEarned = baseSalary / divisor even if hire_date is inside the period, so partial-period pro-rating for new hires is not implemented."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "NuevaNominaPage / PayrollList Ver button", "issue": "After createPayroll succeeds, router.push(`/nomina/${result.id}`) navigates to /nomina/{uuid} which returns 404 - This page could not be found. The Eye/Ver button in payroll-list.tsx line 140 also navigates to the same non-existent route. There is NO /nomina/[id]/page.tsx file in the app router. Users can create payrolls but cannot view any detail (devengados, deducciones, aportes empleador per employee) after creation.", "selector": "button[title='Ver detalle']", "priority": "CRITICAL"},
+      {"component": "PayrollSummary cards", "issue": "Card 'Nómina Pagada (Año)' and 'Costo Total (Año)' only aggregate payrolls with status='PAID'. Since new payrolls are DRAFT, the cards remain $0 until a payroll is approved and paid - which is currently impossible to verify since Aprobar/Marcar como pagada also depend on the (working) approvePayroll/markPayrollAsPaid server actions but the detail page is missing. Consider showing YTD across all states with breakdown."}
+    ],
+    "integration_issues": [
+      {"flow": "Nueva Nómina -> ver detalle", "issue": "The create->redirect flow lands on 404 because the [id] dynamic route is missing. Also affects Eye button in list.", "affected_selectors": ["/nomina/[id]"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "P0/CRITICAL: Create /app/src/app/(dashboard)/nomina/[id]/page.tsx that consumes getPayroll(id) and displays: header (period, type, status, totals), lines table (empleado, devengados: salario, aux. transporte, HE, bonos; deducciones: salud 4%, pension 4%, fondo solidaridad, retención; aportes empleador: salud 8.5%, pensión 12%, ARL, SENA 2%, ICBF 3%, Caja 4%). Also add Aprobar / Marcar como Pagada buttons on the detail page for a complete flow.",
+    "P2: In src/actions/nomina.ts replace both .single() calls that are followed by a null-check with .maybeSingle() to eliminate expected PGRST116 error noise in logs (getPayrollSummary line 523, createPayroll line 288).",
+    "P3: Consider showing YTD costo empleador even for DRAFT/APPROVED payrolls in the summary cards, not only PAID.",
+    "P3: Consider pro-rating salaryEarned by actual worked days when hire_date is inside the period (currently pays a full month even if hired mid-month)."
+  ],
+  "critical_code_review_comments": [
+    "src/actions/nomina.ts is 543 lines - approaching the 700-line guideline limit; consider splitting employees/payroll into two files.",
+    "getPayroll (line 240) is exported and returns joined data, but there is no page to consume it. Wire up UI or remove the action.",
+    "createPayroll performs schema-level rollback manually (delete payroll on line error). Consider using a Postgres RPC / transaction to make this atomic and avoid orphaned payroll headers on partial failure.",
+    "Payroll calculations correctly implement 2026 Colombian rules per the request (Salud 4%, Pensión 4%, Salud empleador 8.5%, Pensión empleador 12%, ARL by risk level, SENA 2%, ICBF 3%, Caja 4%, aux. transporte only if base <= 2 SMLV, fondo solidaridad only if base > 4 SMLV)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not requested", "frontend": "5/6 test cases PASS - only detail page is missing (404)"},
+  "test_credentials": "admin@digikawsay.app / CalamarDorado9! - verified working",
+  "seed_data_creation": "Created 1 test employee via UI: Juan Perez, CC 1234567890, Desarrollador, Indefinido, salario base $3.000.000, ARL Nivel 1. Created 1 test payroll: Julio 2026 Mensual (id 257d4f8e-b6cd-460d-8bac-cc16efdcecce) in DRAFT status with Devengado $3.000.000 / Deducciones $240.000 / Neto $2.760.000.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Módulo Nómina básico funciona salvo por la falta del route /nomina/[id]/page.tsx. Ya existe 1 empleado (Juan Perez CC 1234567890) y 1 nómina en DRAFT (Julio 2026, id=257d4f8e-b6cd-460d-8bac-cc16efdcecce) en la BD Supabase. Los cálculos colombianos son correctos. Al re-testear después del fix, entrar a /nomina, clic en botón ojo (Ver detalle) del row de julio 2026 - debería mostrar detalle con líneas por empleado y aportes patronales; luego probar Aprobar y Marcar como Pagada.",
+  "rca of the issue": "createPayroll returns the new payroll row and NuevaNominaPage does router.push(`/nomina/${result.id}`). The corresponding dynamic route /nomina/[id]/page.tsx was not created, so Next.js returns 404. The Eye action in payroll-list.tsx has the same bug. Fix: create /app/src/app/(dashboard)/nomina/[id]/page.tsx that calls getPayroll(params.id) and renders the detail."
+}
