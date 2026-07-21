@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { UserMenu } from '@/components/ui/user-menu';
+import { ensureAdminRoleForCurrentUser } from '@/lib/rbac';
 
 export default async function DashboardLayout({
     children,
@@ -10,6 +11,11 @@ export default async function DashboardLayout({
 }) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
+
+    // Auto-asignar rol de Administrador si el usuario no tiene roles
+    if (user) {
+        await ensureAdminRoleForCurrentUser();
+    }
 
     const navItems = [
         { href: '/dashboard', label: 'Dashboard', icon: '📊' },
@@ -24,6 +30,7 @@ export default async function DashboardLayout({
         { href: '/cierre', label: 'Cierre Contable', icon: '🔒' },
         { href: '/conciliacion', label: 'Conciliación', icon: '🔄' },
         { href: '/usuarios', label: 'Usuarios', icon: '👤' },
+        { href: '/configuracion', label: 'Configuración', icon: '⚙️' },
     ];
 
     return (

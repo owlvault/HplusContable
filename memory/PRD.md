@@ -21,6 +21,8 @@ DigiKawsay (HplusContable) es un software contable SaaS para Colombia, diseñado
 - ✅ Contabilización automática al aprobar
 - ✅ Generación de PDF de facturas
 - ✅ Transacciones atómicas via RPC para consecutivos
+- ✅ **Vista previa de factura** con plantilla personalizada
+- ✅ **Validación RBAC** en operaciones CRUD
 
 #### Módulo de Cartera
 - ✅ Cuentas por Cobrar/Pagar automáticas
@@ -49,6 +51,8 @@ DigiKawsay (HplusContable) es un software contable SaaS para Colombia, diseñado
 - ✅ Matriz de permisos por módulo (Leer, Escribir, Eliminar, Aprobar)
 - ✅ Roles de sistema protegidos (no editables/eliminables)
 - ✅ Creación de roles personalizados
+- ✅ **Auto-asignación de rol Administrador** al primer login
+- ✅ **Helper RBAC** (`/lib/rbac.ts`) para proteger Server Actions
 
 #### 🆕 Módulo de Plantillas de Factura - NUEVO
 - ✅ Configuración de información de empresa (Nombre, NIT, Dirección, etc.)
@@ -61,6 +65,8 @@ DigiKawsay (HplusContable) es un software contable SaaS para Colombia, diseñado
 - ✅ Carga de extractos bancarios
 - ✅ Comparación de movimientos registrados vs extracto
 - ✅ Estados de conciliación (Pendiente, Conciliado, Manual, Excluido)
+- ✅ **Importación CSV con selector de archivo** o pegar datos
+- ✅ Vista de líneas detectadas antes de importar
 
 ### Mejoras UX Implementadas (Julio 2026)
 - ✅ **Mensajes de error en español** - Errores de Supabase Auth mapeados
@@ -122,7 +128,8 @@ Tablas principales:
 ## Backlog Priorizado
 
 ### P1 - Alta Prioridad
-- [ ] Implementar validaciones RBAC en todos los Server Actions existentes
+- [x] ~~Implementar validaciones RBAC en todos los Server Actions existentes~~ ✅ Completado (facturas)
+- [ ] Extender RBAC a otros módulos (PUC, Terceros, Cartera, Tesorería)
 
 ### P2 - Media Prioridad
 - [ ] Incluir Utilidad del Ejercicio en Patrimonio del Balance General
@@ -134,7 +141,16 @@ Tablas principales:
 
 ## Changelog
 
-### 2026-07-21
+### 2026-07-21 (Sesión 2)
+- ✅ **RBAC implementado** en Server Actions de facturas (getInvoices, createInvoice, updateInvoice, approveInvoice, deleteInvoice)
+- ✅ **Helper RBAC** creado en `/lib/rbac.ts` con funciones `enforcePermission` y `requirePermission`
+- ✅ **Auto-asignación de rol Admin** al primer login del usuario (en layout.tsx)
+- ✅ **Vista previa de factura** (`InvoicePreview` component) con plantilla personalizada
+- ✅ **Importación CSV mejorada** con selector de archivo y vista previa de líneas detectadas
+- ✅ **Menú lateral actualizado** con link a Configuración
+- ✅ **Diálogos de confirmación** en operaciones de facturas (aprobación, anulación, eliminación)
+
+### 2026-07-21 (Sesión 1)
 - ✅ **Ejecutados schemas SQL** para nuevos módulos en Supabase
 - ✅ **Corregidas políticas RLS** para user_roles, role_permissions, invoice_templates, bank_statements
 - ✅ **Configurado CORS** para Server Actions (allowedOrigins actualizado)

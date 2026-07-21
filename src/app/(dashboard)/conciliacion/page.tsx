@@ -517,23 +517,54 @@ export default function ConciliacionPage() {
             <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
-                        <DialogTitle>Importar Extracto CSV</DialogTitle>
+                        <DialogTitle>Importar Extracto CSV/Excel</DialogTitle>
                         <DialogDescription>
-                            Formato: fecha,descripcion,referencia,monto,saldo (monto positivo = crédito, negativo = débito)
+                            Sube un archivo CSV o pega los datos directamente. Formato: fecha,descripcion,referencia,monto,saldo
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="py-4">
+                    <div className="py-4 space-y-4">
+                        {/* File Upload */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Cargar archivo CSV
+                            </label>
+                            <input
+                                type="file"
+                                accept=".csv,.txt"
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        const reader = new FileReader();
+                                        reader.onload = (ev) => {
+                                            const text = ev.target?.result as string;
+                                            setCsvData(text);
+                                        };
+                                        reader.readAsText(file);
+                                    }
+                                }}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                            />
+                        </div>
+                        
+                        <div className="text-center text-sm text-gray-500">— o pega los datos —</div>
+                        
                         <textarea
                             value={csvData}
                             onChange={(e) => setCsvData(e.target.value)}
-                            className="w-full h-64 px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"
+                            className="w-full h-48 px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"
                             placeholder="fecha,descripcion,referencia,monto,saldo
 2024-01-15,Transferencia recibida,REF123,500000,1500000
 2024-01-16,Pago servicio,FAC456,-150000,1350000"
                         />
+                        
+                        {csvData && (
+                            <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                                {csvData.trim().split('\n').length - 1} líneas detectadas (excluyendo encabezado)
+                            </div>
+                        )}
                     </div>
                     <DialogFooter>
-                        <button onClick={() => setShowImportDialog(false)} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg">Cancelar</button>
+                        <button onClick={() => { setShowImportDialog(false); setCsvData(''); }} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg">Cancelar</button>
                         <button onClick={handleImportCSV} disabled={processing || !csvData.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50">
                             {processing ? <Loader2 className="animate-spin" size={16} /> : 'Importar'}
                         </button>

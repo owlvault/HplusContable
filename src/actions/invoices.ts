@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { calculateInvoiceTotals } from '@/lib/utils/invoice-calc';
+import { enforcePermission } from '@/lib/rbac';
 
 // Types
 export type InvoiceType = 'VENTA' | 'COMPRA';
@@ -143,6 +144,9 @@ async function getNextInvoiceNumber(supabase: any, prefix: string): Promise<numb
 
 // Get all invoices
 export async function getInvoices(type?: InvoiceType, state?: InvoiceState) {
+    // RBAC: verificar permiso de lectura en facturas
+    await enforcePermission('facturas', 'read');
+    
     const supabase = await createClient();
 
     let query = supabase
@@ -173,6 +177,9 @@ export async function getInvoices(type?: InvoiceType, state?: InvoiceState) {
 
 // Get single invoice with lines
 export async function getInvoice(id: string) {
+    // RBAC: verificar permiso de lectura
+    await enforcePermission('facturas', 'read');
+    
     const supabase = await createClient();
 
     const { data: invoice, error: invoiceError } = await supabase
@@ -203,6 +210,9 @@ export async function getInvoice(id: string) {
 
 // Create invoice
 export async function createInvoice(invoiceData: Omit<Invoice, 'id' | 'number'>) {
+    // RBAC: verificar permiso de escritura
+    await enforcePermission('facturas', 'write');
+    
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -282,6 +292,9 @@ export async function createInvoice(invoiceData: Omit<Invoice, 'id' | 'number'>)
 
 // Update invoice
 export async function updateInvoice(id: string, invoiceData: Partial<Invoice>) {
+    // RBAC: verificar permiso de escritura
+    await enforcePermission('facturas', 'write');
+    
     const supabase = await createClient();
 
     // Only allow updates on DRAFT invoices
@@ -350,6 +363,9 @@ export async function updateInvoice(id: string, invoiceData: Partial<Invoice>) {
 
 // Approve invoice with automatic accounting entry and receivable/payable
 export async function approveInvoice(id: string) {
+    // RBAC: verificar permiso de aprobación
+    await enforcePermission('facturas', 'approve');
+    
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -683,6 +699,9 @@ export async function markInvoiceAsPaid(id: string) {
 
 // Delete invoice (only drafts)
 export async function deleteInvoice(id: string) {
+    // RBAC: verificar permiso de eliminación
+    await enforcePermission('facturas', 'delete');
+    
     const supabase = await createClient();
 
     const { data: invoice } = await supabase

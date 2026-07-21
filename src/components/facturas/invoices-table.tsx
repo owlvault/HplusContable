@@ -4,7 +4,17 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Invoice, INVOICE_STATE_LABELS, INVOICE_STATE_COLORS, InvoiceState } from '@/types/invoices';
 import { approveInvoice, cancelInvoice, deleteInvoice, markInvoiceAsPaid } from '@/actions/invoices';
-import { FileText, Eye, Trash2, CheckCircle, XCircle, DollarSign, Plus } from 'lucide-react';
+import { FileText, Eye, Trash2, CheckCircle, XCircle, DollarSign, Plus, FileImage } from 'lucide-react';
+import { InvoicePreview } from './invoice-preview';
+import { useToast } from '@/hooks/use-toast';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 
 interface InvoicesTableProps {
     invoices: any[];
@@ -13,7 +23,11 @@ interface InvoicesTableProps {
 
 export function InvoicesTable({ invoices, type }: InvoicesTableProps) {
     const router = useRouter();
+    const { toast } = useToast();
     const [loading, setLoading] = useState<string | null>(null);
+    const [previewInvoice, setPreviewInvoice] = useState<any>(null);
+    const [showConfirmDialog, setShowConfirmDialog] = useState<{ type: string; id: string; title: string; message: string } | null>(null);
+    const [cancelReason, setCancelReason] = useState('');
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('es-CO', {
@@ -32,56 +46,103 @@ export function InvoicesTable({ invoices, type }: InvoicesTableProps) {
     };
 
     const handleApprove = async (id: string) => {
-        if (!confirm('¿Aprobar esta factura?')) return;
-        setLoading(id);
-        try {
-            await approveInvoice(id);
-            router.refresh();
-        } catch (error: any) {
-            alert(error.message);
-        } finally {
-            setLoading(null);
-        }
+        setShowConfirmDialog({
+            type: 'approve',
+            id,
+            title: 'Aprobar Factura',
+            message: '¿Está seguro de aprobar esta factura? Se generará el asiento contable automáticamente.'
+        });
     };
 
     const handleCancel = async (id: string) => {
-        const reason = prompt('Motivo de anulación:');
-        if (!reason) return;
-        setLoading(id);
-        try {
-            await cancelInvoice(id, reason);
-            router.refresh();
-        } catch (error: any) {
-            alert(error.message);
-        } finally {
-            setLoading(null);
-        }
+        setShowConfirmDialog({
+            type: 'cancel',
+            id,
+            title: 'Anular Factura',
+            message: 'Ingrese el motivo de anulación:'
+        });
+        setCancelReason('');
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('¿Eliminar esta factura? Esta acción no se puede deshacer.')) return;
-        setLoading(id);
-        try {
-            await deleteInvoice(id);
-            router.refresh();
-        } catch (error: any) {
-            alert(error.message);
-        } finally {
-            setLoading(null);
-        }
+        setShowConfirmDialog({
+            type: 'delete',
+            id,
+            title: 'Eliminar Factura',
+            message: '¿Está seguro de eliminar esta factura? Esta acción no se puede deshacer.'
+        });
     };
 
     const handleMarkPaid = async (id: string) => {
-        if (!confirm('¿Marcar como pagada?')) return;
+        setShowConfirmDialog({
+            type: 'paid',
+            id,
+            title: 'Marcar como Pagada',
+            message: '¿Confirma que esta factura ha sido pagada?'
+        });
+    };
+
+    const executeAction = async () => {
+        if (!showConfirmDialog) return;
+        
+        const { type: actionType, id } = showConfirmDialog;
         setLoading(id);
+        
         try {
-            await markInvoiceAsPaid(id);
+            switch (actionType) {
+                case 'approve':
+                    await approveInvoice(id);
+                    toast({ title: 'Aprobada', description: 'Factura aprobada correctamente', variant: 'success' });
+                    break;
+                case 'cancel':
+                    if (!cancelReason.trim()) {
+                        toast({ title: 'Error', description: 'Debe ingresar un motivo de anulación', variant: 'destructive' });
+                        setLoading(null);
+                        return;
+                    }
+                    await cancelInvoice(id, cancelReason);
+                    toast({ title: 'Anulada', description: 'Factura anulada correctamente', variant: 'success' });
+                    break;
+                case 'delete':
+                    await deleteInvoice(id);
+                    toast({ title: 'Eliminada', description: 'Factura eliminada correctamente', variant: 'success' });
+                    break;
+                case 'paid':
+                    await markInvoiceAsPaid(id);
+                    toast({ title: 'Pagada', description: 'Factura marcada como pagada', variant: 'success' });
+                    break;
+            }
             router.refresh();
         } catch (error: any) {
-            alert(error.message);
+            toast({ title: 'Error', description: error.message, variant: 'destructive' });
         } finally {
             setLoading(null);
+            setShowConfirmDialog(null);
+            setCancelReason('');
         }
+    };
+
+    const openPreview = (invoice: any) => {
+        setPreviewInvoice({
+            type: invoice.type,
+            number: `${invoice.prefix}-${String(invoice.number).padStart(5, '0')}`,
+            date: invoice.date,
+            dueDate: invoice.due_date,
+            third_party: invoice.third_party ? {
+                name: invoice.third_party.full_name,
+                document_number: invoice.third_party.document_number,
+                address: invoice.third_party.address,
+                phone: invoice.third_party.phone,
+                email: invoice.third_party.email,
+            } : undefined,
+            subtotal: invoice.subtotal,
+            iva_total: (invoice.iva_5 || 0) + (invoice.iva_19 || 0),
+            retention_source: invoice.retention_source,
+            retention_iva: invoice.retention_iva,
+            retention_ica: invoice.retention_ica,
+            total: invoice.total,
+            notes: invoice.notes,
+        });
     };
 
     return (
@@ -153,6 +214,14 @@ export function InvoicesTable({ invoices, type }: InvoicesTableProps) {
                                     <td className="px-4 py-3">
                                         <div className="flex items-center justify-center gap-1">
                                             <button
+                                                onClick={() => openPreview(invoice)}
+                                                className="p-1.5 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded"
+                                                title="Vista previa"
+                                                data-testid={`preview-invoice-${invoice.id}`}
+                                            >
+                                                <FileImage size={16} />
+                                            </button>
+                                            <button
                                                 onClick={() => router.push(`/facturas/${invoice.id}`)}
                                                 className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
                                                 title="Ver detalle"
@@ -214,6 +283,59 @@ export function InvoicesTable({ invoices, type }: InvoicesTableProps) {
                     </table>
                 </div>
             )}
+
+            {/* Preview Dialog */}
+            {previewInvoice && (
+                <InvoicePreview
+                    open={!!previewInvoice}
+                    onClose={() => setPreviewInvoice(null)}
+                    invoice={previewInvoice}
+                />
+            )}
+
+            {/* Confirmation Dialog */}
+            <Dialog open={!!showConfirmDialog} onOpenChange={() => setShowConfirmDialog(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{showConfirmDialog?.title}</DialogTitle>
+                        <DialogDescription>
+                            {showConfirmDialog?.message}
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    {showConfirmDialog?.type === 'cancel' && (
+                        <div className="py-4">
+                            <textarea
+                                value={cancelReason}
+                                onChange={(e) => setCancelReason(e.target.value)}
+                                placeholder="Motivo de anulación..."
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none"
+                                rows={3}
+                            />
+                        </div>
+                    )}
+                    
+                    <DialogFooter>
+                        <button
+                            onClick={() => setShowConfirmDialog(null)}
+                            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={executeAction}
+                            disabled={loading === showConfirmDialog?.id}
+                            className={`px-4 py-2 text-white rounded-lg disabled:opacity-50 ${
+                                showConfirmDialog?.type === 'delete' || showConfirmDialog?.type === 'cancel'
+                                    ? 'bg-red-600 hover:bg-red-700'
+                                    : 'bg-blue-600 hover:bg-blue-700'
+                            }`}
+                        >
+                            {loading === showConfirmDialog?.id ? 'Procesando...' : 'Confirmar'}
+                        </button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
