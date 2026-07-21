@@ -73,6 +73,9 @@ DigiKawsay (HplusContable) es un software contable SaaS para Colombia, diseñado
 - ✅ **Descarga PDF** - Todos los reportes financieros
 - ✅ **Diálogos modernos** - shadcn Dialog y Toast en toda la app
 - ✅ **Transacciones atómicas** - RPC para consecutivos de facturas
+- ✅ **Notificaciones de vencimiento** - Campana con alertas de documentos próximos a vencer
+- ✅ **Historial de cambios** - Auditoría de quién modificó registros y cuándo
+- ✅ **Imprimir desde Preview** - Botón para imprimir/guardar PDF desde vista previa
 
 ### Base de Datos (Supabase)
 Tablas principales: 
@@ -84,6 +87,7 @@ Tablas principales:
 - **🆕 Roles**: user_roles, role_permissions, user_role_assignments
 - **🆕 Plantillas**: invoice_templates
 - **🆕 Conciliación**: bank_statements, bank_statement_lines
+- **🆕 Auditoría**: audit_log
 
 ## Arquitectura
 
@@ -128,8 +132,8 @@ Tablas principales:
 ## Backlog Priorizado
 
 ### P1 - Alta Prioridad
-- [x] ~~Implementar validaciones RBAC en todos los Server Actions existentes~~ ✅ Completado (facturas)
-- [ ] Extender RBAC a otros módulos (PUC, Terceros, Cartera, Tesorería)
+- [x] ~~Implementar validaciones RBAC en todos los Server Actions existentes~~ ✅ Completado
+- [x] ~~Extender RBAC a otros módulos (PUC, Terceros, Cartera, Tesorería)~~ ✅ Completado
 
 ### P2 - Media Prioridad
 - [ ] Incluir Utilidad del Ejercicio en Patrimonio del Balance General
@@ -140,6 +144,13 @@ Tablas principales:
 - [ ] Reportes de Información Exógena
 
 ## Changelog
+
+### 2026-07-21 (Sesión 3)
+- ✅ **RBAC extendido** a PUC, Terceros, Cartera y Tesorería
+- ✅ **Sistema de notificaciones** - Campana con alertas de documentos próximos a vencer
+- ✅ **Historial de auditoría** - Componente `AuditHistory` para ver cambios por registro
+- ✅ **Imprimir desde Preview** - Botón para imprimir/guardar PDF en vista previa de factura
+- ✅ **Tabla audit_log** creada en Supabase
 
 ### 2026-07-21 (Sesión 2)
 - ✅ **RBAC implementado** en Server Actions de facturas (getInvoices, createInvoice, updateInvoice, approveInvoice, deleteInvoice)
