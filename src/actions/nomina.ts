@@ -249,6 +249,7 @@ export async function getPayroll(id: string) {
         .single();
     
     if (payrollError) {
+        console.error('Error fetching payroll:', payrollError);
         throw new Error('Nómina no encontrada');
     }
     
@@ -258,8 +259,7 @@ export async function getPayroll(id: string) {
             *,
             employee:employees(id, first_name, last_name, document_number, position)
         `)
-        .eq('payroll_id', id)
-        .order('employee.last_name');
+        .eq('payroll_id', id);
     
     if (linesError) {
         console.error('Error fetching payroll lines:', linesError);
@@ -285,7 +285,7 @@ export async function createPayroll(
         .eq('period_year', periodYear)
         .eq('period_month', periodMonth)
         .eq('period_type', periodType)
-        .single();
+        .maybeSingle();
     
     if (existing) {
         throw new Error('Ya existe una nómina para este período');
@@ -520,7 +520,7 @@ export async function getPayrollSummary() {
         .eq('period_month', currentMonth)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
     
     // Get YTD totals
     const { data: ytdPayrolls } = await supabase

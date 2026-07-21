@@ -151,19 +151,22 @@ Tablas principales:
 
 ## Changelog
 
-### 2026-07-21 (Sesión 6 - Mejoras Implementadas)
+### 2026-07-21 (Sesión 6 - Mejoras Implementadas + Testing)
 - ✅ **Validación de Aprobación**: approveInvoice() ahora verifica que exactamente 1 registro fue actualizado
-- ✅ **Módulo de Nómina Básico**: 
+- ✅ **Módulo de Nómina Completo**: 
   - Server Actions completas (CRUD empleados, generación de nómina, aprobación, pago)
-  - Cálculos colombianos: Salud 4%, Pensión 4%, ARL, SENA, ICBF, Caja de Compensación
-  - UI: Lista de empleados, formulario nuevo empleado, lista de nóminas, generación de nómina
-  - Soporte para nómina mensual y quincenal
+  - Cálculos colombianos correctos: Salud 4%, Pensión 4%, ARL por nivel, SENA 2%, ICBF 3%, Caja 4%
+  - Aportes empleador: Salud 8.5%, Pensión 12%
+  - Auxilio de transporte automático (solo si salario <= 2 SMLV)
+  - UI completa: Lista de empleados, formulario nuevo empleado, lista de nóminas, **detalle de nómina con líneas y aportes patronales**
+  - Flujo completo: Crear → Ver Detalle → Aprobar → Marcar como Pagada
 - ✅ **Estructura DIAN**: 
   - Tablas para configuración DIAN, resoluciones y facturas electrónicas
   - Server Actions para gestión de configuración y resoluciones
   - Placeholder para integración futura con Web Services DIAN
-- ✅ **RBAC Mejorado**: Admins tienen acceso completo a módulos sin permisos específicos configurados
-- 📝 **SQL pendiente**: Ejecutar /app/sql/nomina_dian_tables.sql en Supabase
+- ✅ **RBAC Mejorado**: Admins tienen acceso completo a módulos sin permisos específicos
+- ✅ **SQL Ejecutado**: Tablas employees, payrolls, payroll_lines, dian_config, dian_resolutions, electronic_invoices creadas en Supabase
+- ✅ **Testing**: 6/6 casos de prueba pasaron - Módulo de nómina funcional
 
 ### 2026-07-21 (Sesión 5 - Testing E2E)
 - ✅ **Testing E2E completo** - 5/5 casos de prueba pasaron
