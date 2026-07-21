@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Invoice, INVOICE_STATE_LABELS, INVOICE_STATE_COLORS, InvoiceState } from '@/types/invoices';
-import { approveInvoice, cancelInvoice, deleteInvoice, markInvoiceAsPaid } from '@/actions/invoices';
+import { approveInvoice, cancelInvoice, deleteInvoice, markInvoiceAsPaid, getInvoiceLines } from '@/actions/invoices';
 import { FileText, Eye, Trash2, CheckCircle, XCircle, DollarSign, Plus, FileImage } from 'lucide-react';
 import { InvoicePreview } from './invoice-preview';
 import { useToast } from '@/hooks/use-toast';
@@ -122,7 +122,15 @@ export function InvoicesTable({ invoices, type }: InvoicesTableProps) {
         }
     };
 
-    const openPreview = (invoice: any) => {
+    const openPreview = async (invoice: any) => {
+        // Cargar las líneas de la factura para el preview
+        let lines: any[] = [];
+        try {
+            lines = await getInvoiceLines(invoice.id);
+        } catch (error) {
+            console.error('Error loading invoice lines:', error);
+        }
+        
         setPreviewInvoice({
             type: invoice.type,
             number: `${invoice.prefix}-${String(invoice.number).padStart(5, '0')}`,
@@ -135,6 +143,13 @@ export function InvoicesTable({ invoices, type }: InvoicesTableProps) {
                 phone: invoice.third_party.phone,
                 email: invoice.third_party.email,
             } : undefined,
+            lines: lines.map((line: any) => ({
+                description: line.description,
+                quantity: line.quantity,
+                unit_price: line.unit_price,
+                iva_rate: line.iva_rate,
+                total: line.total,
+            })),
             subtotal: invoice.subtotal,
             iva_total: (invoice.iva_5 || 0) + (invoice.iva_19 || 0),
             retention_source: invoice.retention_source,

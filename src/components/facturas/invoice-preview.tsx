@@ -266,25 +266,27 @@ export function InvoicePreview({ open, onClose, invoice }: InvoicePreviewProps) 
                                 <div className="w-72">
                                     <div className="flex justify-between py-1 text-sm">
                                         <span className="text-gray-600">Subtotal:</span>
-                                        <span>{formatCurrency(invoice.subtotal || 2000000)}</span>
+                                        <span>{formatCurrency(invoice.subtotal ?? 0)}</span>
                                     </div>
-                                    <div className="flex justify-between py-1 text-sm">
-                                        <span className="text-gray-600">IVA 19%:</span>
-                                        <span>{formatCurrency(invoice.iva_total || 380000)}</span>
-                                    </div>
-                                    {(invoice.retention_source && invoice.retention_source > 0) && (
+                                    {(invoice.iva_total !== undefined && invoice.iva_total > 0) && (
+                                        <div className="flex justify-between py-1 text-sm">
+                                            <span className="text-gray-600">IVA:</span>
+                                            <span>{formatCurrency(invoice.iva_total)}</span>
+                                        </div>
+                                    )}
+                                    {(invoice.retention_source !== undefined && invoice.retention_source > 0) && (
                                         <div className="flex justify-between py-1 text-sm">
                                             <span className="text-gray-600">Ret. Fuente:</span>
                                             <span className="text-red-600">-{formatCurrency(invoice.retention_source)}</span>
                                         </div>
                                     )}
-                                    {(invoice.retention_iva && invoice.retention_iva > 0) && (
+                                    {(invoice.retention_iva !== undefined && invoice.retention_iva > 0) && (
                                         <div className="flex justify-between py-1 text-sm">
                                             <span className="text-gray-600">Ret. IVA:</span>
                                             <span className="text-red-600">-{formatCurrency(invoice.retention_iva)}</span>
                                         </div>
                                     )}
-                                    {(invoice.retention_ica && invoice.retention_ica > 0) && (
+                                    {(invoice.retention_ica !== undefined && invoice.retention_ica > 0) && (
                                         <div className="flex justify-between py-1 text-sm">
                                             <span className="text-gray-600">Ret. ICA:</span>
                                             <span className="text-red-600">-{formatCurrency(invoice.retention_ica)}</span>
@@ -295,7 +297,7 @@ export function InvoicePreview({ open, onClose, invoice }: InvoicePreviewProps) 
                                         style={{ borderColor: template.primary_color, color: template.primary_color }}
                                     >
                                         <span>TOTAL:</span>
-                                        <span>{formatCurrency(invoice.total || 2380000)}</span>
+                                        <span>{formatCurrency(invoice.total ?? 0)}</span>
                                     </div>
                                 </div>
                             </div>

@@ -209,6 +209,27 @@ export async function getInvoice(id: string) {
     return { ...invoice, lines: lines || [] };
 }
 
+// Get invoice lines only (for preview modal)
+export async function getInvoiceLines(invoiceId: string) {
+    // RBAC: verificar permiso de lectura
+    await enforcePermission('facturas', 'read');
+    
+    const supabase = await createClient();
+
+    const { data: lines, error } = await supabase
+        .from('invoice_lines')
+        .select('*')
+        .eq('invoice_id', invoiceId)
+        .order('line_number');
+
+    if (error) {
+        console.error('Error fetching invoice lines:', error);
+        return [];
+    }
+
+    return lines || [];
+}
+
 // Create invoice
 export async function createInvoice(invoiceData: Omit<Invoice, 'id' | 'number'>) {
     // RBAC: verificar permiso de escritura

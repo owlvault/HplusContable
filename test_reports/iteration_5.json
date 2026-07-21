@@ -1,0 +1,41 @@
+{
+  "summary": "Re-tested the 5 fixes applied by main agent after iteration_4. ALL 5 REQUESTED TEST CASES PASS: (1) Vista Previa now shows REAL invoice lines (Servicio de consultoría, qty 10, $500.000) instead of hardcoded template lines; (2) The stray '000' text below IVA row is GONE; (3) Totals are correct (Subtotal $5.000.000, IVA $950.000, TOTAL $5.950.000); (4) /configuracion/usuarios now redirects properly to /usuarios; (5) Dashboard AlertsWidget still works and shows Alertas de Vencimiento with FV-00002 correctly. Found 1 MINOR UI bug in the preview modal: line's IVA column shows just '%' with no number because line.iva_rate is undefined/null in the row payload.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "src/actions/invoices.ts approveInvoice", "issue": "(carry-over from previous iterations) Does not verify a row was updated after status change."},
+      {"endpoint": "src/actions/reportes.ts getBalanceSheet", "issue": "(carry-over) Current-period Net Income is not folded into Patrimonio in Balance General."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Invoice preview modal - Items Table IVA column", "issue": "The IVA rate cell renders as just '%' (empty number) because line.iva_rate is undefined in the payload built by openPreview() (invoices-table.tsx line 150) OR the invoice_lines row lacks that field. Expected e.g. '19%' or '0%'. Non-blocking but looks broken.", "selector": "[role='dialog'] table tbody tr td:nth-child(4)", "priority": "LOW"},
+      {"component": "Invoice preview modal - Line total vs subtotal", "issue": "Line 'Total' column shows the IVA-INCLUSIVE total ($5.950.000) while the header row says 'Total' and other rows show pre-IVA subtotal ($5.000.000). Quantity 10 × Unit price $500.000 = $5.000.000, but table shows $5.950.000. Depending on business rules (line.total from DB likely stores post-IVA total), this may be intentional but is visually confusing next to the Subtotal $5.000.000 row below.", "selector": "[role='dialog'] table tbody tr td:nth-child(5)", "priority": "LOW"},
+      {"component": "Invoice preview modal - Client address/phone placeholders", "issue": "When third_party.address or third_party.phone is empty, the modal shows literal placeholder strings 'Dirección' and 'Teléfono' as if they were real values. Should render empty or dash instead.", "selector": "[role='dialog'] div.grid > div", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Invoice preview modal", "issues": ["Still only exposes 'Imprimir' button - no 'Descargar PDF' parity with detail page (carry-over P3)."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "P3 (new/minor): In invoice-preview.tsx line 239, guard the iva_rate display: render `{line.iva_rate ?? 0}%`. Also verify invoices-table.tsx openPreview() passes line.iva_rate (currently in line 150 it does map iva_rate: line.iva_rate) — likely the DB rows have NULL iva_rate. Consider defaulting to 0 or 19 for display.",
+    "P3 (new/minor): Clarify the meaning of the line 'Total' column - either show subtotal (qty*unit_price) OR label it 'Total con IVA' to avoid confusion vs the Subtotal row.",
+    "P3 (new/minor): Replace fallback placeholder strings 'Dirección'/'Teléfono' with empty content or '—' when address/phone is null.",
+    "Carry-over: Fix Balance General Patrimonio to include current-period Net Income.",
+    "Carry-over: Verify approveInvoice DB update actually affected 1 row."
+  ],
+  "critical_code_review_comments": [
+    "invoice-preview.tsx renders `{line.iva_rate}%` without null coalescing - defensive coding was applied to totals (`?? 0`) but not to the line IVA rate. Same defensive pattern should be applied for consistency.",
+    "invoices-table.tsx openPreview() maps lines optimistically without validating fields; ensure invoice_lines schema is consistent (iva_rate NOT NULL DEFAULT 0)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (frontend-only request)", "frontend": "5/5 requested test cases PASS"},
+  "test_credentials": "admin@digikawsay.app / CalamarDorado9! - verified working",
+  "seed_data_creation": "None. Used existing seed FV-00002 (Comercializadora XYZ Ltda, 10 × $500.000 = $5.000.000 + IVA 19% = $5.950.000).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "The 3 P1/P2 bugs from iteration_4 are FIXED. Only cosmetic/low-priority residual issues remain in the preview modal: (a) IVA rate cell shows bare '%' when iva_rate is null - fix with `{line.iva_rate ?? 0}%`, (b) line 'Total' column shows IVA-inclusive amount while table also shows Subtotal row - relabel column or change value, (c) empty third_party.address/phone renders placeholder strings 'Dirección'/'Teléfono'. Route /configuracion/usuarios redirect works. AlertsWidget on Dashboard works and correctly shows the overdue FV-00002 with $5,95 M en riesgo. Credentials work.",
+  "rca of the issue": "IVA cell shows '%' because JSX renders `{undefined}%` = `%`. Root cause: either invoice_lines rows have iva_rate NULL in DB, or the payload builder in invoices-table.tsx openPreview passes a falsy value. The `?? 0` defensive pattern used for totals must also be applied to line-level fields in invoice-preview.tsx."
+}
