@@ -25,6 +25,7 @@ export default async function DashboardLayout({
         { href: '/facturas', label: 'Facturación', icon: '🧾' },
         { href: '/cartera', label: 'Cartera', icon: '💰' },
         { href: '/tesoreria', label: 'Tesorería', icon: '🏦' },
+        { href: '/nomina', label: 'Nómina', icon: '💼' },
         { href: '/asientos', label: 'Asientos', icon: '📝' },
         { href: '/comprobantes', label: 'Comprobantes', icon: '📋' },
         { href: '/reportes', label: 'Reportes', icon: '📈' },

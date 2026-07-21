@@ -137,16 +137,33 @@ Tablas principales:
 ### P1 - Alta Prioridad
 - [x] ~~Implementar validaciones RBAC en todos los Server Actions existentes~~ ✅ Completado
 - [x] ~~Extender RBAC a otros módulos (PUC, Terceros, Cartera, Tesorería)~~ ✅ Completado
+- [x] ~~Validación de aprobación de facturas~~ ✅ Completado
 
 ### P2 - Media Prioridad
-- [ ] Incluir Utilidad del Ejercicio en Patrimonio del Balance General
+- [x] ~~Incluir Utilidad del Ejercicio en Patrimonio del Balance General~~ ✅ Ya implementado
+- [x] ~~Módulo de Nómina Básico~~ ✅ Implementado (requiere SQL en Supabase)
+- [x] ~~Estructura para Facturación Electrónica DIAN~~ ✅ Implementado (requiere SQL en Supabase)
 
 ### P3 - Baja Prioridad (Futuro)
-- [ ] Módulo de Nómina (alta complejidad por legislación colombiana)
-- [ ] Integración Facturación Electrónica DIAN
+- [ ] Integración real con Web Services DIAN (requiere proveedor tecnológico)
 - [ ] Reportes de Información Exógena
+- [ ] Provisiones de nómina (cesantías, intereses, primas, vacaciones)
 
 ## Changelog
+
+### 2026-07-21 (Sesión 6 - Mejoras Implementadas)
+- ✅ **Validación de Aprobación**: approveInvoice() ahora verifica que exactamente 1 registro fue actualizado
+- ✅ **Módulo de Nómina Básico**: 
+  - Server Actions completas (CRUD empleados, generación de nómina, aprobación, pago)
+  - Cálculos colombianos: Salud 4%, Pensión 4%, ARL, SENA, ICBF, Caja de Compensación
+  - UI: Lista de empleados, formulario nuevo empleado, lista de nóminas, generación de nómina
+  - Soporte para nómina mensual y quincenal
+- ✅ **Estructura DIAN**: 
+  - Tablas para configuración DIAN, resoluciones y facturas electrónicas
+  - Server Actions para gestión de configuración y resoluciones
+  - Placeholder para integración futura con Web Services DIAN
+- ✅ **RBAC Mejorado**: Admins tienen acceso completo a módulos sin permisos específicos configurados
+- 📝 **SQL pendiente**: Ejecutar /app/sql/nomina_dian_tables.sql en Supabase
 
 ### 2026-07-21 (Sesión 5 - Testing E2E)
 - ✅ **Testing E2E completo** - 5/5 casos de prueba pasaron

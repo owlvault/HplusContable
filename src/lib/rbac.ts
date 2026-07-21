@@ -39,6 +39,15 @@ export async function requirePermission(module: string, action: Permission): Pro
     // Verificar permisos del módulo
     const roleIds = assignments.map(a => a.role_id);
     
+    // Verificar si el usuario tiene el rol de Administrador
+    const { data: adminRole } = await supabase
+        .from('user_roles')
+        .select('id')
+        .eq('name', 'Administrador')
+        .single();
+    
+    const isAdmin = adminRole && roleIds.includes(adminRole.id);
+    
     const { data: permissions, error: permError } = await supabase
         .from('role_permissions')
         .select('can_read, can_write, can_delete, can_approve')
@@ -46,7 +55,10 @@ export async function requirePermission(module: string, action: Permission): Pro
         .eq('module', module);
     
     if (permError || !permissions || permissions.length === 0) {
-        // Si no hay permisos específicos, denegar
+        // Si no hay permisos específicos para este módulo y es Admin, dar acceso completo
+        if (isAdmin) {
+            return { allowed: true, userId: user.id };
+        }
         return { allowed: false, userId: user.id, error: 'Sin permisos para este módulo' };
     }
     

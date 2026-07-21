@@ -6,6 +6,7 @@ export const MODULES = [
     { id: 'facturas', name: 'Facturación', icon: '🧾' },
     { id: 'cartera', name: 'Cartera', icon: '💰' },
     { id: 'tesoreria', name: 'Tesorería', icon: '🏦' },
+    { id: 'nomina', name: 'Nómina', icon: '💼' },
     { id: 'asientos', name: 'Asientos', icon: '📝' },
     { id: 'comprobantes', name: 'Comprobantes', icon: '📋' },
     { id: 'reportes', name: 'Reportes', icon: '📈' },

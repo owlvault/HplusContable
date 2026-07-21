@@ -424,17 +424,24 @@ export async function approveInvoice(id: string) {
     }
 
     // Update invoice with journal entry reference
-    const { error: updateError } = await supabase
+    const { data: updateResult, error: updateError } = await supabase
         .from('invoices')
         .update({ 
             state: 'APPROVED', 
             journal_entry_id: journalEntry?.id,
             updated_at: new Date().toISOString() 
         })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('state', 'DRAFT') // Ensure we're only updating DRAFT invoices
+        .select('id');
 
     if (updateError) {
         throw new Error('Error al aprobar factura');
+    }
+
+    // Verify exactly 1 row was updated
+    if (!updateResult || updateResult.length !== 1) {
+        throw new Error('No se pudo aprobar la factura. Puede que ya haya sido aprobada o modificada por otro usuario.');
     }
 
     // Registrar en auditoría
