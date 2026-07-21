@@ -3,7 +3,7 @@
 ## Descripción General
 DigiKawsay (HplusContable) es un software contable SaaS para Colombia, diseñado para una sola empresa con arquitectura modular monolítica.
 
-## Estado Actual: MVP COMPLETO + MEJORAS UX - Listo para Despliegue
+## Estado Actual: MVP COMPLETO + MÓDULOS AVANZADOS - Listo para Despliegue
 
 ### Funcionalidades Implementadas
 
@@ -20,7 +20,7 @@ DigiKawsay (HplusContable) es un software contable SaaS para Colombia, diseñado
 - ✅ Manejo de retenciones (Fuente, IVA, ICA)
 - ✅ Contabilización automática al aprobar
 - ✅ Generación de PDF de facturas
-- ✅ **NUEVO**: Transacciones atómicas via RPC para consecutivos
+- ✅ Transacciones atómicas via RPC para consecutivos
 
 #### Módulo de Cartera
 - ✅ Cuentas por Cobrar/Pagar automáticas
@@ -36,13 +36,31 @@ DigiKawsay (HplusContable) es un software contable SaaS para Colombia, diseñado
 - ✅ Balance de Comprobación
 - ✅ Balance General
 - ✅ Estado de Resultados
-- ✅ **NUEVO**: Descarga en PDF de todos los reportes
+- ✅ Descarga en PDF de todos los reportes
 
 #### Módulo de Cierre Contable
 - ✅ Vista de 12 meses con estados
 - ✅ Validación de período
 - ✅ Cierre/Reapertura/Bloqueo
-- ✅ **NUEVO**: Diálogos modernos shadcn (sin alert/confirm)
+- ✅ Diálogos modernos shadcn (sin alert/confirm)
+
+#### 🆕 Módulo de Usuarios y Roles (RBAC) - NUEVO
+- ✅ Gestión de roles (Administrador, Contador, Auxiliar Contable, Consulta)
+- ✅ Matriz de permisos por módulo (Leer, Escribir, Eliminar, Aprobar)
+- ✅ Roles de sistema protegidos (no editables/eliminables)
+- ✅ Creación de roles personalizados
+
+#### 🆕 Módulo de Plantillas de Factura - NUEVO
+- ✅ Configuración de información de empresa (Nombre, NIT, Dirección, etc.)
+- ✅ Personalización de colores corporativos
+- ✅ Plantilla estándar por defecto
+- ✅ Soporte para múltiples plantillas
+
+#### 🆕 Módulo de Conciliación Bancaria - NUEVO
+- ✅ Selector de cuenta bancaria
+- ✅ Carga de extractos bancarios
+- ✅ Comparación de movimientos registrados vs extracto
+- ✅ Estados de conciliación (Pendiente, Conciliado, Manual, Excluido)
 
 ### Mejoras UX Implementadas (Julio 2026)
 - ✅ **Mensajes de error en español** - Errores de Supabase Auth mapeados
@@ -51,7 +69,15 @@ DigiKawsay (HplusContable) es un software contable SaaS para Colombia, diseñado
 - ✅ **Transacciones atómicas** - RPC para consecutivos de facturas
 
 ### Base de Datos (Supabase)
-Tablas principales: puc_accounts, third_parties, journal_entries, journal_lines, invoices, invoice_lines, receivables, payables, bank_accounts, bank_movements, accounting_periods, document_sequences
+Tablas principales: 
+- **Core**: puc_accounts, third_parties, journal_entries, journal_lines
+- **Facturación**: invoices, invoice_lines, document_sequences
+- **Cartera**: receivables, payables
+- **Tesorería**: bank_accounts, bank_movements
+- **Cierre**: accounting_periods
+- **🆕 Roles**: user_roles, role_permissions, user_role_assignments
+- **🆕 Plantillas**: invoice_templates
+- **🆕 Conciliación**: bank_statements, bank_statement_lines
 
 ## Arquitectura
 
@@ -95,17 +121,26 @@ Tablas principales: puc_accounts, third_parties, journal_entries, journal_lines,
 
 ## Backlog Priorizado
 
+### P1 - Alta Prioridad
+- [ ] Implementar validaciones RBAC en todos los Server Actions existentes
+
 ### P2 - Media Prioridad
-- [ ] Incluir Utilidad del Ejercicio en Patrimonio del Balance General (actualmente muestra diferencia)
-- [ ] Ejecutar RPC `get_next_invoice_number` en Supabase Dashboard
+- [ ] Incluir Utilidad del Ejercicio en Patrimonio del Balance General
 
 ### P3 - Baja Prioridad (Futuro)
-- [ ] Módulo de Nómina
+- [ ] Módulo de Nómina (alta complejidad por legislación colombiana)
 - [ ] Integración Facturación Electrónica DIAN
 - [ ] Reportes de Información Exógena
-- [ ] Control de acceso basado en roles (RBAC)
 
 ## Changelog
+
+### 2026-07-21
+- ✅ **Ejecutados schemas SQL** para nuevos módulos en Supabase
+- ✅ **Corregidas políticas RLS** para user_roles, role_permissions, invoice_templates, bank_statements
+- ✅ **Configurado CORS** para Server Actions (allowedOrigins actualizado)
+- ✅ Verificado funcionamiento de módulo Usuarios/Roles
+- ✅ Verificado funcionamiento de módulo Plantillas de Factura
+- ✅ Verificado funcionamiento de módulo Conciliación Bancaria
 
 ### 2026-07-20
 - Implementados mensajes de error en español para login
@@ -113,3 +148,4 @@ Tablas principales: puc_accounts, third_parties, journal_entries, journal_lines,
 - Reemplazados alert/confirm con shadcn Dialog y Toast
 - Creada función RPC para transacciones atómicas en facturas
 - Testing E2E: 100% pass rate
+- Creado código UI y Actions para Roles, Plantillas y Conciliación

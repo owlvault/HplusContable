@@ -7,8 +7,18 @@
 
 ## Supabase Project
 - **URL**: https://fitjpyqrecgvlrlpwipn.supabase.co
-- **Note**: Configured in /app/.env
+- **ANON_KEY**: Configured in /app/.env
+- **SERVICE_ROLE_KEY**: Required for DDL operations (not stored)
+
+## Default Roles in Database
+| Role | Description |
+|------|-------------|
+| Administrador | Acceso completo a todos los módulos |
+| Contador | Acceso a módulos contables, sin administración de usuarios |
+| Auxiliar Contable | Puede registrar pero no aprobar transacciones |
+| Consulta | Solo lectura |
 
 ## Notes
 - User was created and verified in Supabase Auth
-- All new tables (invoices, bank_accounts, etc.) were created via SQL in Supabase Dashboard
+- All tables created via SQL in Supabase Dashboard
+- New tables (2026-07-21): user_roles, role_permissions, user_role_assignments, invoice_templates, bank_statements, bank_statement_lines
