@@ -22,7 +22,13 @@ import {
     downloadBalanceSheetExcel, 
     downloadIncomeStatementExcel 
 } from '@/lib/utils/excel-export';
-import { FileText, Users, Building2, BarChart3, PieChart, Loader2, Printer, Download, FileSpreadsheet } from 'lucide-react';
+import { 
+    BalanceSheetChart, 
+    IncomeStatementChart, 
+    CarteraChart, 
+    TrialBalanceChart 
+} from '@/components/reportes/report-charts';
+import { FileText, Users, Building2, BarChart3, PieChart, Loader2, Printer, Download, FileSpreadsheet, TrendingUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 type ReportType = 'cartera-clientes' | 'cartera-proveedores' | 'balance-comprobacion' | 'balance-general' | 'estado-resultados';
@@ -34,6 +40,7 @@ export default function ReportesPage() {
     const [month, setMonth] = useState(new Date().getMonth() + 1);
     const [loading, setLoading] = useState(false);
     const [reportData, setReportData] = useState<any>(null);
+    const [showCharts, setShowCharts] = useState(true);
 
     const reportOptions = [
         { id: 'cartera-clientes', label: 'Cartera por Clientes', icon: Users, description: 'Cuentas por cobrar agrupadas por cliente' },
@@ -281,6 +288,17 @@ export default function ReportesPage() {
                                 <FileSpreadsheet size={18} />
                                 Exportar Excel
                             </button>
+                            <button
+                                onClick={() => setShowCharts(!showCharts)}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                                    showCharts 
+                                        ? 'bg-purple-50 border-purple-300 text-purple-700' 
+                                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                                }`}
+                            >
+                                <TrendingUp size={18} />
+                                {showCharts ? 'Ocultar' : 'Mostrar'} Gráficos
+                            </button>
                         </>
                     )}
                 </div>
@@ -289,6 +307,27 @@ export default function ReportesPage() {
             {/* Report Display */}
             {reportData && (
                 <div className="print:m-0">
+                    {/* Charts Section */}
+                    {showCharts && (
+                        <div className="mb-6 print:hidden">
+                            {reportType === 'cartera-clientes' && (
+                                <CarteraChart data={reportData} type="receivable" />
+                            )}
+                            {reportType === 'cartera-proveedores' && (
+                                <CarteraChart data={reportData} type="payable" />
+                            )}
+                            {reportType === 'balance-comprobacion' && (
+                                <TrialBalanceChart data={reportData} />
+                            )}
+                            {reportType === 'balance-general' && (
+                                <BalanceSheetChart data={reportData} />
+                            )}
+                            {reportType === 'estado-resultados' && (
+                                <IncomeStatementChart data={reportData} />
+                            )}
+                        </div>
+                    )}
+
                     {reportType === 'cartera-clientes' && (
                         <CarteraReport 
                             title="Reporte de Cartera por Clientes" 

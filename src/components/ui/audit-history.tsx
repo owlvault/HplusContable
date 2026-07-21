@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { History, User, Clock } from 'lucide-react';
-import { getRecordHistory, AuditLog, formatAuditAction } from '@/actions/audit';
+import { getRecordHistory, AuditLog } from '@/actions/audit';
+import { formatAuditAction } from '@/lib/audit-helpers';
 
 interface AuditHistoryProps {
     recordId: string;

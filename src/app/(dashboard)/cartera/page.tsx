@@ -2,8 +2,8 @@ import { Suspense } from 'react';
 import { getCarteraStats, getReceivables, getPayables, getOverdueAlerts } from '@/actions/cartera';
 import { CarteraStats } from '@/components/cartera/cartera-stats';
 import { AgingTable } from '@/components/cartera/aging-table';
-import { DocumentsTable } from '@/components/cartera/documents-table';
 import { AlertsPanel } from '@/components/cartera/alerts-panel';
+import { FilteredDocuments } from '@/components/cartera/filtered-documents';
 
 export default async function CarteraPage() {
     const [stats, receivables, payables, alerts] = await Promise.all([
@@ -59,22 +59,26 @@ export default async function CarteraPage() {
                 </Suspense>
             </div>
 
-            {/* Documents Tables */}
+            {/* Documents Tables with Filters */}
             <div className="space-y-6">
                 <Suspense fallback={<div className="animate-pulse bg-gray-100 h-64 rounded-lg" />}>
-                    <DocumentsTable
-                        documents={receivables}
-                        type="receivable"
-                        title="Cuentas por Cobrar"
-                    />
+                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                        <FilteredDocuments
+                            documents={receivables}
+                            type="receivable"
+                            title="Cuentas por Cobrar"
+                        />
+                    </div>
                 </Suspense>
 
                 <Suspense fallback={<div className="animate-pulse bg-gray-100 h-64 rounded-lg" />}>
-                    <DocumentsTable
-                        documents={payables}
-                        type="payable"
-                        title="Cuentas por Pagar"
-                    />
+                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                        <FilteredDocuments
+                            documents={payables}
+                            type="payable"
+                            title="Cuentas por Pagar"
+                        />
+                    </div>
                 </Suspense>
             </div>
         </div>

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { seedDatabase, getSeededData } from '@/actions/seed';
 import { Database, CheckCircle, AlertCircle, Loader2, Settings } from 'lucide-react';
 import { InvoiceTemplateConfig } from '@/components/configuracion/invoice-template-config';
+import { BackupWidget } from '@/components/configuracion/backup-widget';
+import { BankIntegration } from '@/components/tesoreria/bank-integration';
 
 export default function ConfigPage() {
     const router = useRouter();
@@ -106,6 +108,12 @@ export default function ConfigPage() {
 
                 {/* Invoice Templates Section */}
                 <InvoiceTemplateConfig />
+
+                {/* Backup & Bank Integration Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
+                    <BackupWidget />
+                    <BankIntegration connections={[]} onRefresh={() => router.refresh()} />
+                </div>
 
                 {/* Note */}
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-w-2xl">

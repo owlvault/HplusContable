@@ -74,15 +74,3 @@ export async function logAuditEvent(
     if (error) console.error('Audit log error:', error);
 }
 
-// Formatear acción para mostrar en UI
-export function formatAuditAction(action: string): string {
-    const labels: Record<string, string> = {
-        INSERT: 'Creación',
-        UPDATE: 'Actualización',
-        DELETE: 'Eliminación',
-        APPROVE: 'Aprobación',
-        CANCEL: 'Anulación',
-        PAYMENT: 'Pago registrado',
-    };
-    return labels[action] || action;
-}

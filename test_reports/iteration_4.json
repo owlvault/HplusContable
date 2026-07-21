@@ -1,0 +1,54 @@
+{
+  "summary": "E2E frontend testing of DigiKawsay after ~12 new features. Discovered and FIXED 2 CRITICAL build/runtime bugs that blocked most POST-based Server Actions and all routes importing audit.ts. After fixes: Login, Dashboard AlertsWidget, /reportes with Recharts, Excel export, /cartera, /facturas (list + detail + PDF preview modal), /usuarios (RBAC roles UI) all work. Route /configuracion/usuarios does NOT exist (500) — RBAC UI is at /usuarios.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "src/actions/invoices.ts approveInvoice", "issue": "Does not verify a row was updated after status change (still open from iteration_1/2)."},
+      {"endpoint": "src/actions/reportes.ts getBalanceSheet", "issue": "Balance General shows Diferencia because current-period Net Income is not folded into Patrimonio (still open from iteration_3)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Invoice preview modal (Vista Previa de Factura)", "issue": "Modal renders HARD-CODED template lines ('Producto o Servicio de ejemplo' x1, 'Segundo producto de ejemplo' x2) instead of the real invoice_lines from DB. Totals (subtotal $5.000.000, IVA 19% $950.000, total $5.950.000) ARE the real invoice totals, but the line items are fake. Line data mismatch is misleading.", "selector": "button[title='Vista previa']", "priority": "HIGH"},
+      {"component": "Invoice preview modal", "issue": "Stray literal '000' text appears immediately below the 'IVA 19%: $ 950.000' row (see /tmp/15_preview.png). Likely a JSX interpolation bug (rendering a raw number without formatting).", "selector": "Vista Previa modal", "priority": "MEDIUM"},
+      {"component": "Routing", "issue": "Route /configuracion/usuarios returns 404/500 - the RBAC UI actually lives at /usuarios. The problem statement referenced /configuracion/usuarios; either add a redirect / a real page under configuracion/usuarios OR update the task spec.", "selector": "n/a", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [
+      {"flow": "Server Actions from client components", "issue": "PRE-FIX: All POST-based server actions (getNotificationSummary, getDueNotifications, and any client-invoked action) were failing with 500 due to `x-forwarded-host` header (factura-treasury.preview.emergentagent.com) not matching `origin` header (factura-treasury.cluster-8.preview.emergentcf.cloud). FIXED by extending allowedOrigins in next.config.ts with the exact host + wildcard for *.cluster-8.preview.emergentcf.cloud.", "affected_selectors": ["AlertsWidget", "any client-side server action"]},
+      {"flow": "Build/compile of /facturas, /configuracion, /usuarios and any route importing @/actions/audit", "issue": "PRE-FIX: src/actions/audit.ts had `'use server'` at top but exported a NON-async `formatAuditAction(...)` string helper. Next.js rejects this with 'Server Actions must be async functions' and returns 500 on every route that imports audit.ts (transitively through logAuditEvent used by invoices.ts). FIXED by moving formatAuditAction to /app/src/lib/audit-helpers.ts (client-safe file) and updating the one consumer (src/components/ui/audit-history.tsx).", "affected_selectors": ["/facturas", "/facturas/[id]", "/configuracion", "/usuarios"]}
+    ],
+    "design_issues": [
+      {"screen": "Invoice preview modal", "issues": ["Modal only shows an 'Imprimir' button; a 'Descargar PDF' button is available on the detail page but not in the preview modal — inconsistent UX."]},
+      {"screen": "/reportes Balance General & Estado de Resultados", "issues": ["Charts render correctly (Recharts SVG count = 4 and 2 respectively). Composition pie chart labels Activos/Pasivos/Patrimonio work.", "Excel exporter emits a .csv (not real .xlsx) — filename is estado-resultados-7-2026.csv. Functional but labeled 'Exportar Excel'. Fine for MVP."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "P1: Fix invoice preview modal to render REAL invoice_lines from DB. Currently displays hardcoded template items ('Producto o Servicio de ejemplo', 'Segundo producto de ejemplo') — line-level detail is fake.",
+    "P1: Remove stray '000' rendered under 'IVA 19%' row in the Vista Previa modal.",
+    "P2: Decide on route for RBAC UI — either add a page at src/app/(dashboard)/configuracion/usuarios/page.tsx (redirect or duplicate) or update the task/nav to reference /usuarios only. Currently /configuracion/usuarios throws 404/500.",
+    "P2: (from iteration_3) Include current-period Net Income in Patrimonio on Balance General so 'Diferencia' becomes 0 when balanced.",
+    "P3: Add 'Descargar PDF' button to the Vista Previa modal for parity with the detail page.",
+    "P3: Consider producing real .xlsx (via SheetJS/xlsx) instead of BOM-prefixed CSV so the 'Exportar Excel' label matches the file format."
+  ],
+  "critical_code_review_comments": [
+    "audit.ts pitfall (now fixed): NEVER export non-async functions from a file marked `'use server'`. The whole file compiles as Server Actions and Next.js errors out for the entire dependency graph.",
+    "next.config.ts pitfall (now fixed): `allowedOrigins` wildcards do NOT match multi-level subdomains. `*.preview.emergentcf.cloud` does NOT match `factura-treasury.cluster-8.preview.emergentcf.cloud` — need `*.cluster-8.preview.emergentcf.cloud` or the exact host.",
+    "src/lib/rbac.ts: `requirePermission` grants full access when user has no role assignments (assumes first user is admin). This is fine for bootstrap but should be gated behind an env flag or removed after seeding.",
+    "src/actions/invoices.ts is 820+ lines and does numbering, totals, journal entries, receivables, payables, cancels, payments, audit — should be split into invoices/create.ts, invoices/approve.ts, invoices/accounting.ts modules.",
+    "AlertsWidget uses `any` for summary typing — hurts refactorability."
+  ],
+  "updated_files": [
+    "/app/next.config.ts (added exact host + *.cluster-8.preview.emergentcf.cloud to allowedOrigins)",
+    "/app/src/actions/audit.ts (removed non-async formatAuditAction)",
+    "/app/src/lib/audit-helpers.ts (NEW — client-safe formatter)",
+    "/app/src/components/ui/audit-history.tsx (import formatAuditAction from new location)"
+  ],
+  "success_rate": {"backend": "not_directly_tested (server actions exercised via UI - all succeed after fixes)", "frontend": "8/9 requested test cases PASS after fixes (only /configuracion/usuarios is a routing gap)"},
+  "test_credentials": "admin@digikawsay.app / CalamarDorado9! - verified working",
+  "seed_data_creation": "None - used existing seed (Comercializadora XYZ Ltda 800987654, invoice FV-00002 $5.950.000, journal entry $5.000.000 on 413505, 4 seeded roles).",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "TWO critical fixes were applied by the testing agent: (1) next.config.ts allowedOrigins extended for the cluster-8.preview.emergentcf.cloud host - if any other host is used in future previews, add it there; (2) formatAuditAction moved out of src/actions/audit.ts to src/lib/audit-helpers.ts because 'use server' files cannot export sync functions. Remaining bug: invoice preview modal renders TEMPLATE line items instead of real invoice_lines (see /tmp/15_preview.png) and shows a stray '000' below the IVA row. RBAC UI is at /usuarios (not /configuracion/usuarios).",
+  "rca of the issue": "1) SERVER ACTIONS 500: Next.js 15's server-action security check compares `origin` header against `x-forwarded-host` and the allowedOrigins list. Wildcards work at only one subdomain level, so `*.preview.emergentcf.cloud` did NOT match `factura-treasury.cluster-8.preview.emergentcf.cloud`. Fix: add exact host + a `*.cluster-8.preview.emergentcf.cloud` entry. 2) BUILD 500: `'use server'` files require ALL exported functions to be async. The recently-added helper `formatAuditAction` was a sync string mapper co-located in src/actions/audit.ts. Turbopack refused to compile the file, so every route in its import graph (facturas, configuracion, usuarios, etc.) 500'd. Fix: move the sync helper to a client-safe module."
+}
