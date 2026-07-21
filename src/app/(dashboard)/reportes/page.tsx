@@ -16,7 +16,13 @@ import { downloadBalanceSheetPDF } from '@/components/reportes/balance-sheet-pdf
 import { downloadIncomeStatementPDF } from '@/components/reportes/income-statement-pdf';
 import { downloadTrialBalancePDF } from '@/components/reportes/trial-balance-pdf';
 import { downloadCarteraReportPDF } from '@/components/reportes/cartera-report-pdf';
-import { FileText, Users, Building2, BarChart3, PieChart, Loader2, Printer, Download } from 'lucide-react';
+import { 
+    downloadCarteraExcel, 
+    downloadTrialBalanceExcel, 
+    downloadBalanceSheetExcel, 
+    downloadIncomeStatementExcel 
+} from '@/lib/utils/excel-export';
+import { FileText, Users, Building2, BarChart3, PieChart, Loader2, Printer, Download, FileSpreadsheet } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 type ReportType = 'cartera-clientes' | 'cartera-proveedores' | 'balance-comprobacion' | 'balance-general' | 'estado-resultados';
@@ -139,6 +145,36 @@ export default function ReportesPage() {
         return `${monthName} ${year}`;
     };
 
+    const handleDownloadExcel = () => {
+        if (!reportData) return;
+        
+        const dateStr = new Date().toISOString().split('T')[0];
+        
+        switch (reportType) {
+            case 'cartera-clientes':
+                downloadCarteraExcel(reportData, 'receivable', `cartera-clientes-${dateStr}.csv`);
+                break;
+            case 'cartera-proveedores':
+                downloadCarteraExcel(reportData, 'payable', `cartera-proveedores-${dateStr}.csv`);
+                break;
+            case 'balance-comprobacion':
+                downloadTrialBalanceExcel(reportData, getPeriodString(), `balance-comprobacion-${month}-${year}.csv`);
+                break;
+            case 'balance-general':
+                downloadBalanceSheetExcel(reportData, `balance-general-${month}-${year}.csv`);
+                break;
+            case 'estado-resultados':
+                downloadIncomeStatementExcel(reportData, `estado-resultados-${month}-${year}.csv`);
+                break;
+        }
+        
+        toast({
+            title: 'Excel generado',
+            description: 'El archivo CSV se ha descargado exitosamente (compatible con Excel)',
+            variant: 'success',
+        });
+    };
+
     const needsPeriod = ['balance-comprobacion', 'balance-general', 'estado-resultados'].includes(reportType);
 
     return (
@@ -237,6 +273,13 @@ export default function ReportesPage() {
                             >
                                 <Download size={18} />
                                 Descargar PDF
+                            </button>
+                            <button
+                                onClick={handleDownloadExcel}
+                                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+                            >
+                                <FileSpreadsheet size={18} />
+                                Exportar Excel
                             </button>
                         </>
                     )}

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { calculateInvoiceTotals } from '@/lib/utils/invoice-calc';
 import { enforcePermission } from '@/lib/rbac';
+import { logAuditEvent } from '@/actions/audit';
 
 // Types
 export type InvoiceType = 'VENTA' | 'COMPRA';
@@ -286,6 +287,16 @@ export async function createInvoice(invoiceData: Omit<Invoice, 'id' | 'number'>)
         throw new Error('Error al crear líneas de factura');
     }
 
+    // Registrar en auditoría
+    await logAuditEvent(
+        'invoices',
+        invoice.id,
+        'INSERT',
+        null,
+        { number: invoice.number, type: invoice.type, total: invoice.total },
+        `Factura ${invoice.prefix}-${String(invoice.number).padStart(5, '0')} creada`
+    );
+
     revalidatePath('/facturas');
     return { success: true, invoice };
 }
@@ -404,6 +415,17 @@ export async function approveInvoice(id: string) {
     if (updateError) {
         throw new Error('Error al aprobar factura');
     }
+
+    // Registrar en auditoría
+    const invoiceNumber = `${invoice.prefix}-${String(invoice.number).padStart(5, '0')}`;
+    await logAuditEvent(
+        'invoices',
+        id,
+        'APPROVE',
+        { state: 'DRAFT' },
+        { state: 'APPROVED', journal_entry_id: journalEntry?.id },
+        `Factura ${invoiceNumber} aprobada - Asiento contable generado`
+    );
 
     revalidatePath('/facturas');
     revalidatePath(`/facturas/${id}`);
@@ -647,7 +669,7 @@ export async function cancelInvoice(id: string, reason: string) {
 
     const { data: invoice } = await supabase
         .from('invoices')
-        .select('state, notes')
+        .select('state, notes, prefix, number')
         .eq('id', id)
         .single();
 
@@ -674,6 +696,17 @@ export async function cancelInvoice(id: string, reason: string) {
         throw new Error('Error al anular factura');
     }
 
+    // Registrar en auditoría
+    const invoiceNumber = `${invoice?.prefix}-${String(invoice?.number).padStart(5, '0')}`;
+    await logAuditEvent(
+        'invoices',
+        id,
+        'CANCEL',
+        { state: invoice?.state },
+        { state: 'CANCELLED', reason },
+        `Factura ${invoiceNumber} anulada - Motivo: ${reason}`
+    );
+
     revalidatePath('/facturas');
     revalidatePath(`/facturas/${id}`);
     return { success: true };
@@ -683,6 +716,12 @@ export async function cancelInvoice(id: string, reason: string) {
 export async function markInvoiceAsPaid(id: string) {
     const supabase = await createClient();
 
+    const { data: invoice } = await supabase
+        .from('invoices')
+        .select('prefix, number, total')
+        .eq('id', id)
+        .single();
+
     const { error } = await supabase
         .from('invoices')
         .update({ state: 'PAID', updated_at: new Date().toISOString() })
@@ -691,6 +730,17 @@ export async function markInvoiceAsPaid(id: string) {
     if (error) {
         throw new Error('Error al marcar como pagada');
     }
+
+    // Registrar en auditoría
+    const invoiceNumber = `${invoice?.prefix}-${String(invoice?.number).padStart(5, '0')}`;
+    await logAuditEvent(
+        'invoices',
+        id,
+        'PAYMENT',
+        { state: 'APPROVED' },
+        { state: 'PAID' },
+        `Factura ${invoiceNumber} marcada como pagada`
+    );
 
     revalidatePath('/facturas');
     revalidatePath(`/facturas/${id}`);

@@ -76,6 +76,9 @@ DigiKawsay (HplusContable) es un software contable SaaS para Colombia, diseñado
 - ✅ **Notificaciones de vencimiento** - Campana con alertas de documentos próximos a vencer
 - ✅ **Historial de cambios** - Auditoría de quién modificó registros y cuándo
 - ✅ **Imprimir desde Preview** - Botón para imprimir/guardar PDF desde vista previa
+- ✅ **Widget de alertas en Dashboard** - Resumen visual de documentos vencidos y próximos
+- ✅ **Exportar a Excel** - Todos los reportes se pueden exportar a CSV/Excel
+- ✅ **Auditoría en facturas** - Registro automático de creación, aprobación, anulación y pago
 
 ### Base de Datos (Supabase)
 Tablas principales: 
@@ -144,6 +147,12 @@ Tablas principales:
 - [ ] Reportes de Información Exógena
 
 ## Changelog
+
+### 2026-07-21 (Sesión 4)
+- ✅ **Auditoría en facturas** - logAuditEvent() en createInvoice, approveInvoice, cancelInvoice, markInvoiceAsPaid
+- ✅ **Widget de alertas en Dashboard** - AlertsWidget con resumen de documentos vencidos/próximos
+- ✅ **Exportar a Excel** - Nuevo botón en reportes para exportar a CSV (compatible con Excel)
+- ✅ **Dashboard mejorado** - Layout de 3 columnas (gráfico, alertas, DigiCFO)
 
 ### 2026-07-21 (Sesión 3)
 - ✅ **RBAC extendido** a PUC, Terceros, Cartera y Tesorería

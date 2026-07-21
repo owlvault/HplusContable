@@ -2,6 +2,7 @@
 import { getFinancialMetrics } from '@/actions/dashboard';
 import { FinancialChart } from '@/components/dashboard/financial-chart';
 import { DigiCFO } from '@/components/dashboard/digi-cfo';
+import { AlertsWidget } from '@/components/dashboard/alerts-widget';
 import { formatCOP } from '@/lib/utils/dian';
 
 export default async function DashboardPage() {
@@ -29,8 +30,8 @@ export default async function DashboardPage() {
                 </div>
             </div>
 
-            {/* MAIN GRID */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem', alignItems: 'start' }}>
+            {/* MAIN GRID - 3 columns */}
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1.5rem', alignItems: 'start' }}>
 
                 {/* CHART SECTION */}
                 <div className="card">
@@ -43,6 +44,9 @@ export default async function DashboardPage() {
                         </div>
                     )}
                 </div>
+
+                {/* ALERTS WIDGET */}
+                <AlertsWidget />
 
                 {/* AI SECTION */}
                 <DigiCFO />
