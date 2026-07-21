@@ -148,6 +148,15 @@ Tablas principales:
 
 ## Changelog
 
+### 2026-07-21 (Sesión 5 - Testing E2E)
+- ✅ **Testing E2E completo** - 5/5 casos de prueba pasaron
+- ✅ **Bug Fix P1**: Vista previa de factura ahora muestra líneas REALES de la base de datos
+- ✅ **Bug Fix P1**: Eliminado texto '000' perdido en modal de preview
+- ✅ **Bug Fix P2**: Creada ruta /configuracion/usuarios que redirige a /usuarios
+- ✅ **Bug Fix P3**: IVA rate ahora muestra 0% en lugar de solo '%' cuando es null
+- ✅ **Bug Fix P3**: Eliminados placeholders 'Dirección'/'Teléfono' cuando están vacíos
+- ✅ **Testing Agent** corrigió bugs críticos de build: allowedOrigins en next.config.ts y formatAuditAction movido a archivo separado
+
 ### 2026-07-21 (Sesión 4)
 - ✅ **Auditoría en facturas** - logAuditEvent() en createInvoice, approveInvoice, cancelInvoice, markInvoiceAsPaid
 - ✅ **Widget de alertas en Dashboard** - AlertsWidget con resumen de documentos vencidos/próximos

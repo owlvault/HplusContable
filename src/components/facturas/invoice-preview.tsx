@@ -204,16 +204,16 @@ export function InvoicePreview({ open, onClose, invoice }: InvoicePreviewProps) 
                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                     <div>
                                         <p className="font-medium text-gray-900">
-                                            {invoice.third_party?.name || 'Nombre del Cliente'}
+                                            {invoice.third_party?.name || '—'}
                                         </p>
                                         <p className="text-gray-600">
-                                            NIT/CC: {invoice.third_party?.document_number || '000.000.000-0'}
+                                            NIT/CC: {invoice.third_party?.document_number || '—'}
                                         </p>
                                     </div>
                                     <div className="text-gray-600">
-                                        <p>{invoice.third_party?.address || 'Dirección'}</p>
-                                        <p>{invoice.third_party?.phone || 'Teléfono'}</p>
-                                        <p>{invoice.third_party?.email || 'email@ejemplo.com'}</p>
+                                        {invoice.third_party?.address && <p>{invoice.third_party.address}</p>}
+                                        {invoice.third_party?.phone && <p>{invoice.third_party.phone}</p>}
+                                        {invoice.third_party?.email && <p>{invoice.third_party.email}</p>}
                                     </div>
                                 </div>
                             </div>
@@ -236,27 +236,16 @@ export function InvoicePreview({ open, onClose, invoice }: InvoicePreviewProps) 
                                                 <td className="py-2 px-3 text-sm">{line.description}</td>
                                                 <td className="py-2 px-3 text-sm text-center">{line.quantity}</td>
                                                 <td className="py-2 px-3 text-sm text-right">{formatCurrency(line.unit_price)}</td>
-                                                <td className="py-2 px-3 text-sm text-center">{line.iva_rate}%</td>
+                                                <td className="py-2 px-3 text-sm text-center">{line.iva_rate ?? 0}%</td>
                                                 <td className="py-2 px-3 text-sm text-right font-medium">{formatCurrency(line.total)}</td>
                                             </tr>
                                         ))
                                     ) : (
-                                        <>
-                                            <tr className="border-b border-gray-200">
-                                                <td className="py-2 px-3 text-sm">Producto o Servicio de ejemplo</td>
-                                                <td className="py-2 px-3 text-sm text-center">1</td>
-                                                <td className="py-2 px-3 text-sm text-right">{formatCurrency(1000000)}</td>
-                                                <td className="py-2 px-3 text-sm text-center">19%</td>
-                                                <td className="py-2 px-3 text-sm text-right font-medium">{formatCurrency(1190000)}</td>
-                                            </tr>
-                                            <tr className="border-b border-gray-200">
-                                                <td className="py-2 px-3 text-sm">Segundo producto de ejemplo</td>
-                                                <td className="py-2 px-3 text-sm text-center">2</td>
-                                                <td className="py-2 px-3 text-sm text-right">{formatCurrency(500000)}</td>
-                                                <td className="py-2 px-3 text-sm text-center">19%</td>
-                                                <td className="py-2 px-3 text-sm text-right font-medium">{formatCurrency(1190000)}</td>
-                                            </tr>
-                                        </>
+                                        <tr className="border-b border-gray-200">
+                                            <td colSpan={5} className="py-4 px-3 text-sm text-gray-400 text-center italic">
+                                                Sin líneas de detalle
+                                            </td>
+                                        </tr>
                                     )}
                                 </tbody>
                             </table>
