@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { UserMenu } from '@/components/ui/user-menu';
+import { NotificationBell } from '@/components/ui/notification-bell';
 import { ensureAdminRoleForCurrentUser } from '@/lib/rbac';
 
 export default async function DashboardLayout({
@@ -77,7 +78,10 @@ export default async function DashboardLayout({
 
                 {/* User info at bottom */}
                 <div style={{ borderTop: '1px solid hsl(var(--border))', paddingTop: '1rem' }}>
-                    <UserMenu userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]} />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                        <NotificationBell />
+                        <UserMenu userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]} />
+                    </div>
                 </div>
             </aside>
 

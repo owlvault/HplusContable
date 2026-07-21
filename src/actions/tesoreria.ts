@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { enforcePermission } from '@/lib/rbac';
 
 export interface BankAccount {
     id: string;
@@ -41,6 +42,9 @@ export interface CashFlowStats {
 
 // Get all bank accounts
 export async function getBankAccounts(activeOnly: boolean = true) {
+    // RBAC: verificar permiso de lectura en tesorería
+    await enforcePermission('tesoreria', 'read');
+    
     const supabase = await createClient();
 
     let query = supabase
@@ -81,6 +85,9 @@ export async function getBankAccount(id: string) {
 
 // Create bank account
 export async function createBankAccount(accountData: Omit<BankAccount, 'id' | 'created_at' | 'current_balance'>) {
+    // RBAC: verificar permiso de escritura en tesorería
+    await enforcePermission('tesoreria', 'write');
+    
     const supabase = await createClient();
 
     const { data, error } = await supabase
@@ -103,6 +110,9 @@ export async function createBankAccount(accountData: Omit<BankAccount, 'id' | 'c
 
 // Update bank account
 export async function updateBankAccount(id: string, accountData: Partial<BankAccount>) {
+    // RBAC: verificar permiso de escritura en tesorería
+    await enforcePermission('tesoreria', 'write');
+    
     const supabase = await createClient();
 
     const { error } = await supabase
@@ -123,6 +133,9 @@ export async function updateBankAccount(id: string, accountData: Partial<BankAcc
 
 // Delete bank account (soft delete - deactivate)
 export async function deactivateBankAccount(id: string) {
+    // RBAC: verificar permiso de eliminación en tesorería
+    await enforcePermission('tesoreria', 'delete');
+    
     const supabase = await createClient();
 
     const { error } = await supabase
@@ -140,6 +153,9 @@ export async function deactivateBankAccount(id: string) {
 
 // Get bank movements
 export async function getBankMovements(accountId?: string, limit: number = 50) {
+    // RBAC: verificar permiso de lectura en tesorería
+    await enforcePermission('tesoreria', 'read');
+    
     const supabase = await createClient();
 
     let query = supabase
@@ -174,6 +190,9 @@ export async function createBankMovement(movementData: {
     reference?: string;
     description?: string;
 }) {
+    // RBAC: verificar permiso de escritura en tesorería
+    await enforcePermission('tesoreria', 'write');
+    
     const supabase = await createClient();
 
     // Get current balance

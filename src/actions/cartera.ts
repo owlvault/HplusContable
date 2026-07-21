@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { enforcePermission } from '@/lib/rbac';
 
 export interface Receivable {
     id: string;
@@ -88,6 +89,9 @@ function getAgingBucket(daysOverdue: number): string {
 
 // Get all receivables (cuentas por cobrar)
 export async function getReceivables(status?: string) {
+    // RBAC: verificar permiso de lectura en cartera
+    await enforcePermission('cartera', 'read');
+    
     const supabase = await createClient();
 
     let query = supabase
@@ -121,6 +125,9 @@ export async function getReceivables(status?: string) {
 
 // Get all payables (cuentas por pagar)
 export async function getPayables(status?: string) {
+    // RBAC: verificar permiso de lectura en cartera
+    await enforcePermission('cartera', 'read');
+    
     const supabase = await createClient();
 
     let query = supabase
@@ -346,6 +353,9 @@ export async function registerReceivablePayment(
     paymentMethod: string,
     reference?: string
 ) {
+    // RBAC: verificar permiso de escritura en cartera
+    await enforcePermission('cartera', 'write');
+    
     const supabase = await createClient();
 
     // Get current receivable
@@ -408,6 +418,9 @@ export async function registerPayablePayment(
     paymentMethod: string,
     reference?: string
 ) {
+    // RBAC: verificar permiso de escritura en cartera
+    await enforcePermission('cartera', 'write');
+    
     const supabase = await createClient();
 
     // Get current payable

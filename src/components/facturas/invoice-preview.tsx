@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { InvoiceTemplate, getActiveInvoiceTemplate } from '@/actions/invoice-templates';
-import { X, FileText } from 'lucide-react';
+import { FileText, Download, Printer } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -45,6 +45,7 @@ interface InvoicePreviewProps {
 export function InvoicePreview({ open, onClose, invoice }: InvoicePreviewProps) {
     const [template, setTemplate] = useState<InvoiceTemplate | null>(null);
     const [loading, setLoading] = useState(true);
+    const printRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (open) {
@@ -62,6 +63,34 @@ export function InvoicePreview({ open, onClose, invoice }: InvoicePreviewProps) 
         } finally {
             setLoading(false);
         }
+    };
+
+    const handlePrint = () => {
+        const content = printRef.current;
+        if (!content) return;
+        
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) return;
+        
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Factura ${invoice.number || ''}</title>
+                <style>
+                    body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+                    @media print {
+                        body { padding: 0; }
+                    }
+                </style>
+            </head>
+            <body>
+                ${content.innerHTML}
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
     };
 
     const formatCurrency = (value: number) => {
@@ -86,11 +115,21 @@ export function InvoicePreview({ open, onClose, invoice }: InvoicePreviewProps) 
     return (
         <Dialog open={open} onOpenChange={onClose}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
-                <DialogHeader className="p-4 border-b sticky top-0 bg-white z-10">
+                <DialogHeader className="p-4 border-b sticky top-0 bg-white z-10 flex flex-row items-center justify-between">
                     <DialogTitle className="flex items-center gap-2">
                         <FileText size={20} />
                         Vista Previa de Factura
                     </DialogTitle>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handlePrint}
+                            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                            title="Imprimir / Guardar como PDF"
+                        >
+                            <Printer size={16} />
+                            Imprimir
+                        </button>
+                    </div>
                 </DialogHeader>
                 
                 {loading ? (
@@ -102,6 +141,7 @@ export function InvoicePreview({ open, onClose, invoice }: InvoicePreviewProps) 
                     <div className="p-8 bg-gray-100">
                         {/* Preview Container - Paper look */}
                         <div 
+                            ref={printRef}
                             className="bg-white shadow-lg mx-auto max-w-[210mm] min-h-[297mm] p-8"
                             style={{ fontFamily: 'Arial, sans-serif' }}
                         >
