@@ -24,6 +24,21 @@ DigiKawsay (HplusContable) es un software contable SaaS para Colombia, diseñado
 - ✅ **Vista previa de factura** con plantilla personalizada
 - ✅ **Validación RBAC** en operaciones CRUD
 
+#### 🆕 Módulo de Ventas - NUEVO
+- ✅ Catálogo comercial, listas de precio (con precio piso y descuento máximo) y tarifas de costo
+- ✅ Costo hora cargado construido desde salario × factor prestacional ÷ horas productivas
+- ✅ Pipeline de oportunidades con valor ponderado e historial de etapas
+- ✅ Propuestas versionadas con **precio y margen unitario por línea** (columnas GENERATED)
+- ✅ Supuestos y escenarios del modelo financiero, con la celda de origen
+- ✅ Cascada de margen: lista → descuento → ingreso propio → margen bruto → margen operativo
+- ✅ Gobierno de precios: bloqueo por precio bajo piso, descuento excedido o margen mínimo
+- ✅ `winProposal()`: propuesta ganada → contrato + proyecto + líneas congeladas + hitos
+- ✅ Seguimiento plan vs. real por proyecto (EAC, CPI, desviación de margen, fuga)
+- ✅ **Ingesta de la carpeta Comercial de OneDrive** vía sincronizador local (`tools/sales-sync`)
+- ✅ Dimensión transversal `projects` / `cost_centers` propagada a todo el ERP
+- 📄 Diseño completo en `docs/modulo-ventas.md`
+- ⚠️ Requiere ejecutar `sql/ventas_module.sql` en Supabase
+
 #### Módulo de Cartera
 - ✅ Cuentas por Cobrar/Pagar automáticas
 - ✅ Tabla de Antigüedad de Cartera
@@ -83,6 +98,12 @@ DigiKawsay (HplusContable) es un software contable SaaS para Colombia, diseñado
 ### Base de Datos (Supabase)
 Tablas principales: 
 - **Core**: puc_accounts, third_parties, journal_entries, journal_lines
+- **🆕 Ventas**: sales_items, sales_price_lists, sales_price_list_items, sales_cost_rates,
+  sales_opportunities, sales_opportunity_stage_history, sales_proposals, sales_proposal_lines,
+  sales_proposal_assumptions, sales_proposal_scenarios, sales_contracts, sales_contract_lines,
+  sales_billing_milestones, sales_revenue_schedule, sales_import_batches, sales_import_files,
+  sales_import_mappings
+- **🆕 Dimensión transversal**: projects, cost_centers, project_time_entries
 - **Facturación**: invoices, invoice_lines, document_sequences
 - **Cartera**: receivables, payables
 - **Tesorería**: bank_accounts, bank_movements
