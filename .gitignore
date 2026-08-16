@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+# El sincronizador de ventas tiene su propio paquete en tools/sales-sync
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*

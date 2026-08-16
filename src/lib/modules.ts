@@ -3,6 +3,8 @@ export const MODULES = [
     { id: 'dashboard', name: 'Dashboard', icon: '📊' },
     { id: 'puc', name: 'Plan de Cuentas', icon: '📖' },
     { id: 'terceros', name: 'Terceros', icon: '👥' },
+    { id: 'ventas', name: 'Ventas', icon: '🎯' },
+    { id: 'proyectos', name: 'Proyectos', icon: '📐' },
     { id: 'facturas', name: 'Facturación', icon: '🧾' },
     { id: 'cartera', name: 'Cartera', icon: '💰' },
     { id: 'tesoreria', name: 'Tesorería', icon: '🏦' },

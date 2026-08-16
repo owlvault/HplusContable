@@ -1,0 +1,48 @@
+{
+  "min_confidence": 60,
+  "chunk_size": 25,
+  "max_depth": 6,
+
+  "mappings": [
+    {
+      "name": "Plantilla HPlus 2026",
+      "description": "Modelos que siguen la plantilla estandar de costeo.",
+      "match_pattern": "modelo financiero",
+      "priority": 10,
+      "mapping": {
+        "sheet": "Costeo",
+        "header_row": 8,
+        "columns": {
+          "description": "Concepto",
+          "role_family": "Rol",
+          "seniority": "Nivel",
+          "quantity": "Cantidad",
+          "hours": "Horas",
+          "unit": "Unidad",
+          "unit_list_price": "Tarifa lista",
+          "unit_price": "Tarifa venta",
+          "discount_rate": "Descuento",
+          "unit_direct_cost": "Costo hora",
+          "unit_indirect_cost": "Overhead",
+          "tax_rate": "IVA"
+        }
+      }
+    },
+    {
+      "name": "Cliente Acme - formato heredado",
+      "description": "Las columnas se referencian por letra porque los titulos estan combinados.",
+      "match_pattern": "acme",
+      "priority": 5,
+      "mapping": {
+        "sheet": "Propuesta",
+        "header_row": 12,
+        "columns": {
+          "description": "B",
+          "quantity": "D",
+          "unit_price": "F",
+          "unit_direct_cost": "H"
+        }
+      }
+    }
+  ]
+}
