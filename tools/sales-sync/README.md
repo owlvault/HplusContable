@@ -19,7 +19,17 @@ cd tools\sales-sync
 npm install
 ```
 
-## Uso
+## Uso rápido (doble clic)
+
+| Archivo | Qué hace |
+|---|---|
+| `revisar.bat` | Recorre la carpeta y escribe `manifiesto.json`. **No toca el ERP.** |
+| `publicar.bat` | Publica en el ERP. Pide la URL y el token si no están en variables de entorno. |
+
+Ambos instalan las dependencias solos la primera vez. Si tu carpeta Comercial
+está en otra ruta, ábrelos con el Bloc de notas y corrige la línea `set "CARPETA=..."`.
+
+## Uso por línea de comandos
 
 Primero, en seco, para ver qué se detectó sin escribir nada en el ERP:
 
