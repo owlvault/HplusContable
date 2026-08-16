@@ -12,6 +12,10 @@ node_modules/
 !.yarn/releases
 !.yarn/versions
 
+# Archivos de trabajo local: manifiestos de ingesta, semillas generadas y
+# cualquier extracto con precios de clientes. No deben salir del equipo.
+/.local/
+
 # testing
 /coverage
 
