@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { registerReceivablePayment, registerPayablePayment } from '@/actions/cartera';
 import { Eye, DollarSign, AlertTriangle } from 'lucide-react';
+import { getSpanishErrorMessage } from '@/lib/error-messages';
 
 interface DocumentsTableProps {
     documents: any[];
@@ -89,8 +90,8 @@ export function DocumentsTable({ documents, type, title }: DocumentsTableProps) 
                 reference: '',
             });
             router.refresh();
-        } catch (error: any) {
-            alert(error.message);
+        } catch (error) {
+            alert(getSpanishErrorMessage(error));
         } finally {
             setLoading(null);
         }

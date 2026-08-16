@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createAccount } from '@/actions/puc';
 import { useRouter } from 'next/navigation';
+import { getSpanishErrorMessage } from '@/lib/error-messages';
 
 type Props = {
     onClose: () => void;
@@ -43,8 +44,8 @@ export function AccountForm({ onClose, parentAccount }: Props) {
             await createAccount(formData);
             router.refresh();
             onClose();
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err) {
+            setError(getSpanishErrorMessage(err));
         } finally {
             setLoading(false);
         }

@@ -204,7 +204,7 @@ export async function closeAccountingPeriod(year: number, month: number, notes?:
     }
 
     // Get or create period
-    let period = await getAccountingPeriod(year, month);
+    const period = await getAccountingPeriod(year, month);
     
     if (!period) {
         throw new Error('Período no encontrado');

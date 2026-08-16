@@ -4,6 +4,16 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { enforcePermission } from '@/lib/rbac';
 
+export interface OverdueAlert {
+    type: 'receivable' | 'payable';
+    id: string;
+    documentNumber: string;
+    thirdParty: string;
+    amount: number;
+    daysOverdue: number;
+    severity: 'low' | 'medium' | 'high' | 'critical';
+}
+
 export interface Receivable {
     id: string;
     third_party_id: string;
@@ -476,13 +486,24 @@ export async function registerPayablePayment(
 }
 
 // Get overdue alerts
-export async function getOverdueAlerts() {
+/**
+ * Clasifica la severidad por antigüedad. Extraerlo evita que el ternario
+ * anidado se ensanche a `string` y rompa el tipo del panel de alertas.
+ */
+function severityForDays(daysOverdue: number): OverdueAlert['severity'] {
+    if (daysOverdue > 90) return 'critical';
+    if (daysOverdue > 60) return 'high';
+    if (daysOverdue > 30) return 'medium';
+    return 'low';
+}
+
+export async function getOverdueAlerts(): Promise<OverdueAlert[]> {
     const [receivables, payables] = await Promise.all([
         getReceivables(),
         getPayables(),
     ]);
 
-    const alerts = [];
+    const alerts: OverdueAlert[] = [];
 
     // Receivables alerts
     for (const r of receivables) {
@@ -494,7 +515,7 @@ export async function getOverdueAlerts() {
                 thirdParty: r.third_party?.full_name || 'Desconocido',
                 amount: r.balance,
                 daysOverdue: r.days_overdue,
-                severity: r.days_overdue > 90 ? 'critical' : r.days_overdue > 60 ? 'high' : r.days_overdue > 30 ? 'medium' : 'low',
+                severity: severityForDays(r.days_overdue),
             });
         }
     }
@@ -509,7 +530,7 @@ export async function getOverdueAlerts() {
                 thirdParty: p.third_party?.full_name || 'Desconocido',
                 amount: p.balance,
                 daysOverdue: p.days_overdue,
-                severity: p.days_overdue > 90 ? 'critical' : p.days_overdue > 60 ? 'high' : p.days_overdue > 30 ? 'medium' : 'low',
+                severity: severityForDays(p.days_overdue),
             });
         }
     }

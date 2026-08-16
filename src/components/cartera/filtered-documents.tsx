@@ -37,7 +37,7 @@ export function FilteredDocuments({ documents, type, title }: FilteredDocumentsP
                 type={type}
             />
             
-            <DocumentsTable documents={filteredDocuments} type={type} />
+            <DocumentsTable documents={filteredDocuments} type={type} title={title} />
         </div>
     );
 }

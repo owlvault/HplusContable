@@ -25,7 +25,7 @@ export async function requirePermission(module: string, action: Permission): Pro
     }
     
     // Verificar si el usuario tiene roles asignados
-    const { data: assignments, error: assignError } = await supabase
+    const { data: assignments } = await supabase
         .from('user_role_assignments')
         .select('role_id')
         .eq('user_id', user.id);

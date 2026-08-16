@@ -9,7 +9,7 @@ export function calculateDV(nit: string): number {
     const vpri = [3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71];
     let x = 0;
     let y = 0;
-    let z = nit.length;
+    const z = nit.length;
 
     // Limpiar el NIT de caracteres no numéricos
     const cleanNit = nit.replace(/\D/g, '');

@@ -39,10 +39,10 @@ export async function getInvoiceTemplates(): Promise<InvoiceTemplate[]> {
     if (error) {
         // Table might not exist yet, return default
         console.error('Error fetching templates:', error);
-        return [getDefaultTemplate()];
+        return [await getDefaultTemplate()];
     }
     
-    return data?.length ? data : [getDefaultTemplate()];
+    return data?.length ? data : [await getDefaultTemplate()];
 }
 
 // Get default template

@@ -182,7 +182,7 @@ const BalanceSheetDocument = ({ assets, liabilities, equity, totalAssets, totalL
 
             <View style={[
                 styles.balanceCheck,
-                Math.abs(totalAssets - (totalLiabilities + totalEquity)) >= 0.01 && styles.balanceCheckError
+                Math.abs(totalAssets - (totalLiabilities + totalEquity)) >= 0.01 ? styles.balanceCheckError : undefined
             ]}>
                 <Text>
                     {Math.abs(totalAssets - (totalLiabilities + totalEquity)) < 0.01 

@@ -6,6 +6,7 @@ import { getAccounts } from '@/actions/puc';
 import { getThirdParties } from '@/actions/third-parties';
 import { createJournalEntry } from '@/actions/accounting';
 import { useRouter } from 'next/navigation';
+import { getSpanishErrorMessage } from '@/lib/error-messages';
 
 type Line = {
     id: string;
@@ -74,8 +75,8 @@ export function JournalEntryForm() {
             await createJournalEntry(new Date(date), description, formattedLines, isApproved);
             router.push('/asientos');
             router.refresh();
-        } catch (e: any) {
-            setError(e.message);
+        } catch (e) {
+            setError(getSpanishErrorMessage(e));
         } finally {
             setIsSubmitting(false);
         }

@@ -1,7 +1,6 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { formatCOP } from '@/lib/utils/dian';
 
 export async function getTrialBalance(startDate?: string, endDate?: string) {
     const supabase = await createClient();

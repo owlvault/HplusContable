@@ -1,6 +1,6 @@
 'use client';
 
-import { FileText, TrendingUp, TrendingDown, Clock, CreditCard } from 'lucide-react';
+import { TrendingUp, TrendingDown, Clock, CreditCard } from 'lucide-react';
 
 interface InvoiceStatsProps {
     stats: {

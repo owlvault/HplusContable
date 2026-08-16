@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { createThirdParty } from '@/actions/third-parties';
 import { useRouter } from 'next/navigation';
 import { calculateDV } from '@/lib/utils/dian';
+import type { DocumentType } from '@/types/database';
+import { getSpanishErrorMessage } from '@/lib/error-messages';
 
 type Props = {
     onClose: () => void;
@@ -15,7 +17,10 @@ export function ThirdPartyForm({ onClose }: Props) {
     const [error, setError] = useState('');
     
     const [formData, setFormData] = useState({
-        document_type: 'CC' as const,
+        // Sin la unión completa TypeScript congela el tipo en 'CC' y las
+        // comparaciones con 'NIT' quedan como código muerto: el dígito de
+        // verificación no se podía tipar aunque en runtime sí funcionara.
+        document_type: 'CC' as DocumentType,
         document_number: '',
         dv: null as number | null,
         full_name: '',
@@ -61,8 +66,8 @@ export function ThirdPartyForm({ onClose }: Props) {
             await createThirdParty(formData);
             router.refresh();
             onClose();
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err) {
+            setError(getSpanishErrorMessage(err));
         } finally {
             setLoading(false);
         }
@@ -95,7 +100,7 @@ export function ThirdPartyForm({ onClose }: Props) {
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Tipo Doc.</label>
                             <select
                                 value={formData.document_type}
-                                onChange={(e) => setFormData({ ...formData, document_type: e.target.value as any, dv: null })}
+                                onChange={(e) => setFormData({ ...formData, document_type: e.target.value as DocumentType, dv: null })}
                                 style={{ width: '100%', padding: '0.625rem', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius-md)' }}
                             >
                                 {documentTypes.map(t => (

@@ -21,6 +21,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { getSpanishErrorMessage } from '@/lib/error-messages';
 
 interface PayrollDetailProps {
     payroll: any;
@@ -61,8 +62,8 @@ export function PayrollDetail({ payroll }: PayrollDetailProps) {
             await approvePayroll(payroll.id);
             toast({ title: 'Aprobada', description: 'Nómina aprobada correctamente', variant: 'success' });
             router.refresh();
-        } catch (error: any) {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        } catch (error) {
+            toast({ title: 'Error', description: getSpanishErrorMessage(error), variant: 'destructive' });
         } finally {
             setLoading(false);
         }
@@ -75,8 +76,8 @@ export function PayrollDetail({ payroll }: PayrollDetailProps) {
             toast({ title: 'Pagada', description: 'Nómina marcada como pagada', variant: 'success' });
             setShowPayDialog(false);
             router.refresh();
-        } catch (error: any) {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        } catch (error) {
+            toast({ title: 'Error', description: getSpanishErrorMessage(error), variant: 'destructive' });
         } finally {
             setLoading(false);
         }

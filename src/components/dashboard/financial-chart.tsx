@@ -21,7 +21,7 @@ export function FinancialChart({ data }: Props) {
             ...data.flatMap(d => [d.income, d.expense])
         ) || 1;
 
-        const bars = data.slice(-6).map((d, index) => ({
+        const bars = data.slice(-6).map((d) => ({
             ...d,
             incomeHeight: (d.income / maxValue) * 100,
             expenseHeight: (d.expense / maxValue) * 100,
@@ -79,7 +79,7 @@ export function FinancialChart({ data }: Props) {
                 ))}
 
                 {/* Bars */}
-                {chartData.bars.map((bar, index) => (
+                {chartData.bars.map((bar) => (
                     <div
                         key={bar.date}
                         style={{

@@ -18,6 +18,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { getSpanishErrorMessage } from '@/lib/error-messages';
 
 const MONTHS = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -68,10 +69,10 @@ export default function CierrePage() {
         try {
             const result = await validatePeriodForClosing(year, month);
             setValidation(result);
-        } catch (error: any) {
+        } catch (error) {
             toast({
                 title: 'Error de validación',
-                description: error.message || 'No se pudo validar el período',
+                description: getSpanishErrorMessage(error) || 'No se pudo validar el período',
                 variant: 'destructive',
             });
         } finally {
@@ -94,10 +95,10 @@ export default function CierrePage() {
             setValidation(null);
             setClosingNotes('');
             loadSummary();
-        } catch (error: any) {
+        } catch (error) {
             toast({
                 title: 'Error al cerrar',
-                description: error.message || 'No se pudo cerrar el período',
+                description: getSpanishErrorMessage(error) || 'No se pudo cerrar el período',
                 variant: 'destructive',
             });
         } finally {
@@ -118,10 +119,10 @@ export default function CierrePage() {
                 variant: 'success',
             });
             loadSummary();
-        } catch (error: any) {
+        } catch (error) {
             toast({
                 title: 'Error al reabrir',
-                description: error.message || 'No se pudo reabrir el período',
+                description: getSpanishErrorMessage(error) || 'No se pudo reabrir el período',
                 variant: 'destructive',
             });
         }
@@ -140,10 +141,10 @@ export default function CierrePage() {
                 variant: 'success',
             });
             loadSummary();
-        } catch (error: any) {
+        } catch (error) {
             toast({
                 title: 'Error al bloquear',
-                description: error.message || 'No se pudo bloquear el período',
+                description: getSpanishErrorMessage(error) || 'No se pudo bloquear el período',
                 variant: 'destructive',
             });
         }

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Invoice, INVOICE_STATE_LABELS, INVOICE_STATE_COLORS, InvoiceState } from '@/types/invoices';
+import { INVOICE_STATE_LABELS, INVOICE_STATE_COLORS, InvoiceState } from '@/types/invoices';
 import { approveInvoice, cancelInvoice, deleteInvoice, markInvoiceAsPaid, getInvoiceLines } from '@/actions/invoices';
 import { FileText, Eye, Trash2, CheckCircle, XCircle, DollarSign, Plus, FileImage } from 'lucide-react';
 import { InvoicePreview } from './invoice-preview';
@@ -15,6 +15,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { getSpanishErrorMessage } from '@/lib/error-messages';
 
 interface InvoicesTableProps {
     invoices: any[];
@@ -113,8 +114,8 @@ export function InvoicesTable({ invoices, type }: InvoicesTableProps) {
                     break;
             }
             router.refresh();
-        } catch (error: any) {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        } catch (error) {
+            toast({ title: 'Error', description: getSpanishErrorMessage(error), variant: 'destructive' });
         } finally {
             setLoading(null);
             setShowConfirmDialog(null);

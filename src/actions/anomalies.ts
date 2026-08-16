@@ -100,11 +100,6 @@ export async function detectAnomalies(): Promise<Anomaly[]> {
         });
     }
 
-    // 3. Check for third parties without activity
-    const { data: parties } = await supabase
-        .from('third_parties')
-        .select('id, full_name')
-        .is('updated_at', null);
 
     // 4. Positive feedback if everything is good
     if (anomalies.length === 0) {

@@ -214,11 +214,14 @@ export function applyCarteraFilters(documents: any[], filters: CarteraFilters): 
     }
 
     // Date filters
-    if (filters.dateFrom) {
-        filtered = filtered.filter(doc => doc.due_date >= filters.dateFrom);
+    // Se copian a constantes locales: dentro del callback TypeScript ya no
+    // puede garantizar que la propiedad siga definida.
+    const { dateFrom, dateTo } = filters;
+    if (dateFrom) {
+        filtered = filtered.filter(doc => doc.due_date >= dateFrom);
     }
-    if (filters.dateTo) {
-        filtered = filtered.filter(doc => doc.due_date <= filters.dateTo);
+    if (dateTo) {
+        filtered = filtered.filter(doc => doc.due_date <= dateTo);
     }
 
     // Status filter

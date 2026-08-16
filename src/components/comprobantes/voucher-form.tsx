@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { VoucherType, createVoucher, getTaxRates } from '@/actions/vouchers';
 import { getThirdParties } from '@/actions/third-parties';
 import { formatCOP } from '@/lib/utils/dian';
+import { getSpanishErrorMessage } from '@/lib/error-messages';
 
 type Props = {
     type: VoucherType;
@@ -39,7 +40,7 @@ export function VoucherForm({ type, onClose, onSuccess }: Props) {
     ]);
 
     const [thirdParties, setThirdParties] = useState<any[]>([]);
-    const [taxRates, setTaxRates] = useState<any[]>([]);
+    const [, setTaxRates] = useState<any[]>([]);
 
     useEffect(() => {
         loadData();
@@ -105,15 +106,13 @@ export function VoucherForm({ type, onClose, onSuccess }: Props) {
         try {
             await createVoucher(type, new Date(date), thirdPartyId, description, lines);
             onSuccess();
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err) {
+            setError(getSpanishErrorMessage(err));
         } finally {
             setLoading(false);
         }
     };
 
-    const ivaRates = taxRates.filter(t => t.type === 'IVA');
-    const retentionRates = taxRates.filter(t => t.type === 'RETEFUENTE');
 
     return (
         <div style={{

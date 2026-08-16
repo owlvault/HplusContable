@@ -39,7 +39,7 @@ function getStatus(daysUntilDue: number): DueNotification['status'] {
 /**
  * Determina la prioridad basada en los días y el monto
  */
-function getPriority(daysUntilDue: number, amount: number): DueNotification['priority'] {
+function getPriority(daysUntilDue: number, _amount: number): DueNotification['priority'] {
     if (daysUntilDue < -30) return 'critical';
     if (daysUntilDue < 0) return 'high';
     if (daysUntilDue <= 3) return 'medium';

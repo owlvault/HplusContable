@@ -10,7 +10,7 @@ interface AuditHistoryProps {
     recordType?: string;
 }
 
-export function AuditHistory({ recordId, recordType }: AuditHistoryProps) {
+export function AuditHistory({ recordId }: AuditHistoryProps) {
     const [history, setHistory] = useState<AuditLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [expanded, setExpanded] = useState(false);

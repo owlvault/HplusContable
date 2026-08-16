@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { BankMovement, BankAccount } from '@/actions/tesoreria';
 import { createBankMovement, reconcileMovement, transferBetweenAccounts } from '@/actions/tesoreria';
 import { ArrowUpCircle, ArrowDownCircle, RefreshCw, Check, Plus, ArrowLeftRight } from 'lucide-react';
+import { getSpanishErrorMessage } from '@/lib/error-messages';
 
 interface MovementsTableProps {
     movements: BankMovement[];
@@ -78,8 +79,8 @@ export function MovementsTable({ movements, accounts }: MovementsTableProps) {
                 description: '',
             });
             router.refresh();
-        } catch (error: any) {
-            alert(error.message);
+        } catch (error) {
+            alert(getSpanishErrorMessage(error));
         } finally {
             setLoading(null);
         }
@@ -114,8 +115,8 @@ export function MovementsTable({ movements, accounts }: MovementsTableProps) {
                 reference: '',
             });
             router.refresh();
-        } catch (error: any) {
-            alert(error.message);
+        } catch (error) {
+            alert(getSpanishErrorMessage(error));
         } finally {
             setLoading(null);
         }
@@ -126,8 +127,8 @@ export function MovementsTable({ movements, accounts }: MovementsTableProps) {
         try {
             await reconcileMovement(id);
             router.refresh();
-        } catch (error: any) {
-            alert(error.message);
+        } catch (error) {
+            alert(getSpanishErrorMessage(error));
         } finally {
             setLoading(null);
         }

@@ -13,6 +13,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { getSpanishErrorMessage } from '@/lib/error-messages';
 
 interface EmployeesListProps {
     employees: any[];
@@ -61,8 +62,8 @@ export function EmployeesList({ employees }: EmployeesListProps) {
             toast({ title: 'Desactivado', description: 'Empleado desactivado correctamente', variant: 'success' });
             setConfirmDeactivate(null);
             router.refresh();
-        } catch (error: any) {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        } catch (error) {
+            toast({ title: 'Error', description: getSpanishErrorMessage(error), variant: 'destructive' });
         } finally {
             setLoading(null);
         }
@@ -74,8 +75,8 @@ export function EmployeesList({ employees }: EmployeesListProps) {
             await updateEmployee(id, { is_active: true, termination_date: undefined });
             toast({ title: 'Reactivado', description: 'Empleado reactivado correctamente', variant: 'success' });
             router.refresh();
-        } catch (error: any) {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        } catch (error) {
+            toast({ title: 'Error', description: getSpanishErrorMessage(error), variant: 'destructive' });
         } finally {
             setLoading(null);
         }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getSpanishErrorMessage } from '@/lib/error-messages';
 
-const EMERGENT_LLM_KEY = process.env.EMERGENT_LLM_KEY;
 const BACKEND_URL = process.env.CHAT_BACKEND_URL || 'http://localhost:8001';
 
 export async function POST(request: NextRequest) {
@@ -35,10 +35,10 @@ export async function POST(request: NextRequest) {
         const data = await response.json();
         return NextResponse.json({ response: data.response });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('Chat API error:', error);
         return NextResponse.json(
-            { error: error.message || 'Error interno del servidor' },
+            { error: getSpanishErrorMessage(error) || 'Error interno del servidor' },
             { status: 500 }
         );
     }

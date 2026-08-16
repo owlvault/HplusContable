@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { getSpanishErrorMessage } from '@/lib/error-messages';
 import { AlertCircle, Loader2 } from 'lucide-react';
+import { getSpanishErrorMessage } from '@/lib/error-messages';
 
 export default function LoginPage() {
     const router = useRouter();

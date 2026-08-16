@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/server';
 import { Database } from '@/types/database';
 import { enforcePermission } from '@/lib/rbac';
 
-type Account = Database['public']['Tables']['puc_accounts']['Row'];
 type AccountInsert = Database['public']['Tables']['puc_accounts']['Insert'];
 
 export async function getAccounts(search?: string) {

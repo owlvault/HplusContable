@@ -14,7 +14,8 @@ import {
     importStatementLines,
     getReconciliationSummary
 } from '@/actions/conciliacion';
-import { Building2, FileSpreadsheet, Check, X, Link2, AlertTriangle, Loader2, Plus, RefreshCw, Upload, CheckCircle } from 'lucide-react';
+import type { BankStatementLine } from '@/actions/conciliacion';
+import { Building2, FileSpreadsheet, Check, X, Link2, Loader2, Plus, RefreshCw, Upload, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
     Dialog,
@@ -24,6 +25,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { getSpanishErrorMessage } from '@/lib/error-messages';
 
 export default function ConciliacionPage() {
     const { toast } = useToast();
@@ -33,7 +35,7 @@ export default function ConciliacionPage() {
     const [selectedStatement, setSelectedStatement] = useState<any>(null);
     const [movements, setMovements] = useState<any[]>([]);
     const [summary, setSummary] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const [, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
     
     // Dialog states
@@ -76,7 +78,7 @@ export default function ConciliacionPage() {
             if (data.length > 0) {
                 setSelectedAccount(data[0].id);
             }
-        } catch (error) {
+        } catch {
             toast({ title: 'Error', description: 'No se pudieron cargar las cuentas bancarias', variant: 'destructive' });
         } finally {
             setLoading(false);
@@ -125,8 +127,8 @@ export default function ConciliacionPage() {
             setShowNewStatementDialog(false);
             loadStatements(selectedAccount);
             setSelectedStatement(statement);
-        } catch (error: any) {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        } catch (error) {
+            toast({ title: 'Error', description: getSpanishErrorMessage(error), variant: 'destructive' });
         } finally {
             setProcessing(false);
         }
@@ -139,27 +141,35 @@ export default function ConciliacionPage() {
         try {
             // Parse CSV
             const lines = csvData.trim().split('\n');
-            const parsedLines = lines.slice(1).map(line => {
-                const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
-                return {
-                    date: cols[0],
-                    description: cols[1] || '',
-                    reference: cols[2] || null,
-                    amount: Math.abs(parseFloat(cols[3]) || 0),
-                    type: parseFloat(cols[3]) >= 0 ? 'CREDIT' : 'DEBIT' as const,
-                    balance_after: cols[4] ? parseFloat(cols[4]) : null,
-                    status: 'PENDING' as const,
-                    matched_movement_id: null,
-                };
-            }).filter(l => l.amount > 0);
+            // El tipo explícito evita que el ternario de `type` se ensanche a
+            // `string`: `as const` solo afectaba a la rama 'DEBIT'.
+            const parsedLines = lines
+                .slice(1)
+                // El tipo va en el `map` y no en la constante: el `filter`
+                // posterior corta la propagación del tipo contextual.
+                .map<Omit<BankStatementLine, 'id' | 'statement_id'>>((line) => {
+                    const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
+                    const amount = parseFloat(cols[3]);
+                    return {
+                        date: cols[0],
+                        description: cols[1] || '',
+                        reference: cols[2] || null,
+                        amount: Math.abs(amount || 0),
+                        type: amount >= 0 ? 'CREDIT' : 'DEBIT',
+                        balance_after: cols[4] ? parseFloat(cols[4]) : null,
+                        status: 'PENDING',
+                        matched_movement_id: null,
+                    };
+                })
+                .filter(l => l.amount > 0);
             
             await importStatementLines(selectedStatement.id, parsedLines);
             toast({ title: 'Importado', description: `${parsedLines.length} líneas importadas`, variant: 'success' });
             setShowImportDialog(false);
             setCsvData('');
             loadStatementDetails(selectedStatement.id);
-        } catch (error: any) {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        } catch (error) {
+            toast({ title: 'Error', description: getSpanishErrorMessage(error), variant: 'destructive' });
         } finally {
             setProcessing(false);
         }
@@ -177,8 +187,8 @@ export default function ConciliacionPage() {
                 variant: 'success' 
             });
             loadStatementDetails(selectedStatement.id);
-        } catch (error: any) {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        } catch (error) {
+            toast({ title: 'Error', description: getSpanishErrorMessage(error), variant: 'destructive' });
         } finally {
             setProcessing(false);
         }
@@ -191,8 +201,8 @@ export default function ConciliacionPage() {
             toast({ title: 'Conciliado', description: 'Línea conciliada manualmente', variant: 'success' });
             setShowManualMatchDialog(null);
             loadStatementDetails(selectedStatement.id);
-        } catch (error: any) {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        } catch (error) {
+            toast({ title: 'Error', description: getSpanishErrorMessage(error), variant: 'destructive' });
         } finally {
             setProcessing(false);
         }
@@ -204,8 +214,8 @@ export default function ConciliacionPage() {
             await excludeLine(lineId, 'Excluido manualmente');
             toast({ title: 'Excluido', description: 'Línea excluida de la conciliación', variant: 'success' });
             loadStatementDetails(selectedStatement.id);
-        } catch (error: any) {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        } catch (error) {
+            toast({ title: 'Error', description: getSpanishErrorMessage(error), variant: 'destructive' });
         } finally {
             setProcessing(false);
         }
@@ -220,8 +230,8 @@ export default function ConciliacionPage() {
             toast({ title: 'Completada', description: 'Conciliación finalizada exitosamente', variant: 'success' });
             loadStatements(selectedAccount);
             loadStatementDetails(selectedStatement.id);
-        } catch (error: any) {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        } catch (error) {
+            toast({ title: 'Error', description: getSpanishErrorMessage(error), variant: 'destructive' });
         } finally {
             setProcessing(false);
         }

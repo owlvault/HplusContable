@@ -2,6 +2,18 @@
 
 import { createClient } from '@/lib/supabase/server';
 
+/**
+ * Fecha del asiento al que pertenece la línea.
+ *
+ * El cliente de Supabase no está tipado con el esquema, así que infiere las
+ * relaciones embebidas como arreglo aunque `entry_id` sea una relación a uno
+ * y en tiempo de ejecución llegue un objeto. Se aceptan las dos formas.
+ */
+function entryDate(entry: unknown): string | null {
+    const value = Array.isArray(entry) ? entry[0] : entry;
+    return (value as { date?: string } | null | undefined)?.date ?? null;
+}
+
 export async function getFinancialMetrics() {
     const supabase = await createClient();
 
@@ -30,9 +42,16 @@ export async function getFinancialMetrics() {
 
     // History for Chart (Group by Month)
     // Simplified grouping
-    const flow = lines.reduce((acc: any, curr) => {
-        // @ts-ignore
-        const date = new Date(curr.journal_entries?.date).toISOString().slice(0, 7); // YYYY-MM
+    const flow = lines.reduce<Record<string, { income: number; expense: number }>>((acc, curr) => {
+        const rawDate = entryDate(curr.journal_entries);
+        if (!rawDate) return acc;
+
+        const parsed = new Date(rawDate);
+        // Sin esta guarda una sola línea con fecha ilegible tumbaba el
+        // dashboard entero: new Date(undefined).toISOString() lanza excepción.
+        if (Number.isNaN(parsed.getTime())) return acc;
+
+        const date = parsed.toISOString().slice(0, 7); // YYYY-MM
         if (!acc[date]) acc[date] = { income: 0, expense: 0 };
 
         if (curr.account_code.startsWith('4')) acc[date].income += curr.credit;

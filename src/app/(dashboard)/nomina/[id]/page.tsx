@@ -14,7 +14,7 @@ export default async function PayrollDetailPage({ params }: Props) {
     let payroll;
     try {
         payroll = await getPayroll(id);
-    } catch (error) {
+    } catch {
         notFound();
     }
 

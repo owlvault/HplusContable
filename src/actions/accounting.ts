@@ -1,7 +1,6 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { Database } from '@/types/database';
 
 type JournalLineInput = {
     account_code: string;

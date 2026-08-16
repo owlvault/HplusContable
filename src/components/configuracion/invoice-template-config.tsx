@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getInvoiceTemplates, saveInvoiceTemplate, setDefaultTemplate, deleteInvoiceTemplate, getDefaultTemplate, InvoiceTemplate } from '@/actions/invoice-templates';
-import { FileText, Palette, Building2, Plus, Trash2, Check, Star, Loader2, Image } from 'lucide-react';
+import { FileText, Palette, Building2, Plus, Trash2, Check, Star, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
     Dialog,
@@ -12,6 +12,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { getSpanishErrorMessage } from '@/lib/error-messages';
 
 export function InvoiceTemplateConfig() {
     const { toast } = useToast();
@@ -33,7 +34,7 @@ export function InvoiceTemplateConfig() {
             if (data.length > 0) {
                 setSelectedTemplate(data.find(t => t.is_default) || data[0]);
             }
-        } catch (error) {
+        } catch {
             const defaultTemplate = await getDefaultTemplate();
             setTemplates([defaultTemplate]);
             setSelectedTemplate(defaultTemplate);
@@ -59,10 +60,10 @@ export function InvoiceTemplateConfig() {
                 variant: 'success',
             });
             loadTemplates();
-        } catch (error: any) {
+        } catch (error) {
             toast({
                 title: 'Error',
-                description: error.message || 'No se pudo guardar la plantilla',
+                description: getSpanishErrorMessage(error) || 'No se pudo guardar la plantilla',
                 variant: 'destructive',
             });
         } finally {
@@ -81,10 +82,10 @@ export function InvoiceTemplateConfig() {
                 variant: 'success',
             });
             loadTemplates();
-        } catch (error: any) {
+        } catch (error) {
             toast({
                 title: 'Error',
-                description: error.message,
+                description: getSpanishErrorMessage(error),
                 variant: 'destructive',
             });
         }
@@ -103,10 +104,10 @@ export function InvoiceTemplateConfig() {
             setShowDeleteDialog(false);
             setSelectedTemplate(null);
             loadTemplates();
-        } catch (error: any) {
+        } catch (error) {
             toast({
                 title: 'Error',
-                description: error.message,
+                description: getSpanishErrorMessage(error),
                 variant: 'destructive',
             });
         }
@@ -136,10 +137,10 @@ export function InvoiceTemplateConfig() {
                 variant: 'success',
             });
             loadTemplates();
-        } catch (error: any) {
+        } catch (error) {
             toast({
                 title: 'Error',
-                description: error.message,
+                description: getSpanishErrorMessage(error),
                 variant: 'destructive',
             });
         }

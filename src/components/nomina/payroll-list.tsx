@@ -13,6 +13,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { getSpanishErrorMessage } from '@/lib/error-messages';
 
 interface PayrollListProps {
     payrolls: any[];
@@ -63,8 +64,8 @@ export function PayrollList({ payrolls }: PayrollListProps) {
             await approvePayroll(id);
             toast({ title: 'Aprobada', description: 'Nómina aprobada correctamente', variant: 'success' });
             router.refresh();
-        } catch (error: any) {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        } catch (error) {
+            toast({ title: 'Error', description: getSpanishErrorMessage(error), variant: 'destructive' });
         } finally {
             setLoading(null);
         }
@@ -79,8 +80,8 @@ export function PayrollList({ payrolls }: PayrollListProps) {
             toast({ title: 'Pagada', description: 'Nómina marcada como pagada', variant: 'success' });
             setShowPayDialog(null);
             router.refresh();
-        } catch (error: any) {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        } catch (error) {
+            toast({ title: 'Error', description: getSpanishErrorMessage(error), variant: 'destructive' });
         } finally {
             setLoading(null);
         }

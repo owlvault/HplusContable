@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { InvoiceTemplate, getActiveInvoiceTemplate } from '@/actions/invoice-templates';
-import { FileText, Download, Printer } from 'lucide-react';
+import { FileText, Printer } from 'lucide-react';
 import {
     Dialog,
     DialogContent,

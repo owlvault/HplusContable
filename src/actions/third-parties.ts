@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/server';
 import { Database } from '@/types/database';
 import { enforcePermission } from '@/lib/rbac';
 
-type ThirdParty = Database['public']['Tables']['third_parties']['Row'];
 type ThirdPartyInsert = Database['public']['Tables']['third_parties']['Insert'];
 
 export async function getThirdParties(search?: string) {

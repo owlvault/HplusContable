@@ -6,6 +6,7 @@ import { approveInvoice, cancelInvoice, markInvoiceAsPaid } from '@/actions/invo
 import { useState } from 'react';
 import { ArrowLeft, CheckCircle, XCircle, DollarSign, Printer, Edit, Download } from 'lucide-react';
 import { downloadInvoicePDF } from './invoice-pdf';
+import { getSpanishErrorMessage } from '@/lib/error-messages';
 
 interface InvoiceDetailProps {
     invoice: InvoiceWithDetails;
@@ -37,8 +38,8 @@ export function InvoiceDetail({ invoice }: InvoiceDetailProps) {
         try {
             await approveInvoice(invoice.id);
             router.refresh();
-        } catch (error: any) {
-            alert(error.message);
+        } catch (error) {
+            alert(getSpanishErrorMessage(error));
         } finally {
             setLoading(false);
         }
@@ -51,8 +52,8 @@ export function InvoiceDetail({ invoice }: InvoiceDetailProps) {
         try {
             await cancelInvoice(invoice.id, reason);
             router.refresh();
-        } catch (error: any) {
-            alert(error.message);
+        } catch (error) {
+            alert(getSpanishErrorMessage(error));
         } finally {
             setLoading(false);
         }
@@ -64,8 +65,8 @@ export function InvoiceDetail({ invoice }: InvoiceDetailProps) {
         try {
             await markInvoiceAsPaid(invoice.id);
             router.refresh();
-        } catch (error: any) {
-            alert(error.message);
+        } catch (error) {
+            alert(getSpanishErrorMessage(error));
         } finally {
             setLoading(false);
         }

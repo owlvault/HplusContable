@@ -6,6 +6,9 @@ export type Json =
     | { [key: string]: Json | undefined }
     | Json[]
 
+/** Tipos de documento de identificación aceptados por la DIAN. */
+export type DocumentType = 'CC' | 'NIT' | 'CE' | 'PASAPORTE' | 'TI'
+
 export interface Database {
     public: {
         Tables: {

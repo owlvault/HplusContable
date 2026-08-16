@@ -21,7 +21,7 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
                 <InvoiceDetail invoice={invoice} />
             </div>
         );
-    } catch (error) {
+    } catch {
         notFound();
     }
 }

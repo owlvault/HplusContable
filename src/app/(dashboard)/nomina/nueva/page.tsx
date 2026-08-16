@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Calendar, Loader2 } from 'lucide-react';
 import { createPayroll } from '@/actions/nomina';
 import { useToast } from '@/hooks/use-toast';
+import { getSpanishErrorMessage } from '@/lib/error-messages';
 
 export default function NuevaNominaPage() {
     const router = useRouter();
@@ -56,10 +57,10 @@ export default function NuevaNominaPage() {
             });
             
             router.push(`/nomina/${result.id}`);
-        } catch (error: any) {
+        } catch (error) {
             toast({ 
                 title: 'Error', 
-                description: error.message, 
+                description: getSpanishErrorMessage(error), 
                 variant: 'destructive' 
             });
         } finally {

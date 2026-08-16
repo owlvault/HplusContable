@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { getSpanishErrorMessage } from '@/lib/error-messages';
 
 export default function RegisterPage() {
-    const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -45,8 +44,8 @@ export default function RegisterPage() {
 
             if (error) throw error;
             setSuccess(true);
-        } catch (err: any) {
-            setError(err.message || 'Error al registrarse');
+        } catch (err) {
+            setError(getSpanishErrorMessage(err) || 'Error al registrarse');
         } finally {
             setLoading(false);
         }

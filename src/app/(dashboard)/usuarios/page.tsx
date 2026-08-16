@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getRoles, getRoleWithPermissions, updateRolePermissions, createRole, deleteRole } from '@/actions/roles';
 import { MODULES } from '@/lib/modules';
-import { Users, Shield, Plus, Trash2, Check, X, Loader2, Lock, Edit2 } from 'lucide-react';
+import { Users, Shield, Plus, Trash2, Check, X, Loader2, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
     Dialog,
@@ -13,6 +13,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { getSpanishErrorMessage } from '@/lib/error-messages';
 
 interface Role {
     id: string;
@@ -61,7 +62,7 @@ export default function UsuariosPage() {
             if (data.length > 0 && !selectedRole) {
                 setSelectedRole(data[0].id);
             }
-        } catch (error) {
+        } catch {
             toast({
                 title: 'Error',
                 description: 'No se pudieron cargar los roles',
@@ -114,7 +115,7 @@ export default function UsuariosPage() {
                 description: 'Permisos actualizados correctamente',
                 variant: 'success',
             });
-        } catch (error) {
+        } catch {
             toast({
                 title: 'Error',
                 description: 'No se pudieron guardar los permisos',
@@ -139,7 +140,7 @@ export default function UsuariosPage() {
             setNewRoleName('');
             setNewRoleDescription('');
             loadRoles();
-        } catch (error) {
+        } catch {
             toast({
                 title: 'Error',
                 description: 'No se pudo crear el rol',
@@ -161,10 +162,10 @@ export default function UsuariosPage() {
                 setSelectedRole(null);
             }
             loadRoles();
-        } catch (error: any) {
+        } catch (error) {
             toast({
                 title: 'Error',
-                description: error.message || 'No se pudo eliminar el rol',
+                description: getSpanishErrorMessage(error) || 'No se pudo eliminar el rol',
                 variant: 'destructive',
             });
         }

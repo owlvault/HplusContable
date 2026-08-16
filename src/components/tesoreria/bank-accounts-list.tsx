@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { BankAccount } from '@/actions/tesoreria';
 import { createBankAccount, deactivateBankAccount } from '@/actions/tesoreria';
 import { Building2, Plus, Trash2, CreditCard } from 'lucide-react';
+import { getSpanishErrorMessage } from '@/lib/error-messages';
 
 interface BankAccountsListProps {
     accounts: BankAccount[];
@@ -51,8 +52,8 @@ export function BankAccountsList({ accounts }: BankAccountsListProps) {
                 is_active: true,
             });
             router.refresh();
-        } catch (error: any) {
-            alert(error.message);
+        } catch (error) {
+            alert(getSpanishErrorMessage(error));
         } finally {
             setLoading(false);
         }
@@ -63,8 +64,8 @@ export function BankAccountsList({ accounts }: BankAccountsListProps) {
         try {
             await deactivateBankAccount(id);
             router.refresh();
-        } catch (error: any) {
-            alert(error.message);
+        } catch (error) {
+            alert(getSpanishErrorMessage(error));
         }
     };
 

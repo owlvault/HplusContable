@@ -2,18 +2,12 @@
 
 import { AlertTriangle, Clock, AlertCircle } from 'lucide-react';
 
-interface Alert {
-    type: 'receivable' | 'payable';
-    id: string;
-    documentNumber: string;
-    thirdParty: string;
-    amount: number;
-    daysOverdue: number;
-    severity: 'low' | 'medium' | 'high' | 'critical';
-}
+// La forma la define quien produce el dato, para que no se dupliquen
+// definiciones que puedan divergir.
+import type { OverdueAlert } from '@/actions/cartera';
 
 interface AlertsPanelProps {
-    alerts: Alert[];
+    alerts: OverdueAlert[];
 }
 
 export function AlertsPanel({ alerts }: AlertsPanelProps) {

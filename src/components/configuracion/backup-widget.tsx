@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Download, Database, Clock, RefreshCw, Loader2, Calendar, HardDrive, CheckCircle } from 'lucide-react';
+import { Download, Database, Loader2, Calendar, HardDrive, CheckCircle } from 'lucide-react';
 import { generateBackupJSON, getBackupStats, exportPeriodData } from '@/actions/backup';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -73,7 +73,7 @@ export function BackupWidget() {
             });
             
             setShowDialog(false);
-        } catch (error) {
+        } catch {
             toast({
                 title: 'Error',
                 description: 'No se pudo generar el backup',

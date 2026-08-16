@@ -83,7 +83,7 @@ async function getNextInvoiceNumber(supabase: any, prefix: string): Promise<numb
 
     if (selectError || !existing) {
         // Create new sequence starting at 1
-        const { data: newSeq, error: insertError } = await supabase
+        const { error: insertError } = await supabase
             .from('document_sequences')
             .insert({ 
                 document_type: prefix === 'FV' ? 'FACTURA_VENTA' : 'FACTURA_COMPRA',

@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { seedDatabase, getSeededData } from '@/actions/seed';
-import { Database, CheckCircle, AlertCircle, Loader2, Settings } from 'lucide-react';
+import { seedDatabase } from '@/actions/seed';
+import { Database, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { InvoiceTemplateConfig } from '@/components/configuracion/invoice-template-config';
 import { BackupWidget } from '@/components/configuracion/backup-widget';
 import { BankIntegration } from '@/components/tesoreria/bank-integration';
+import { getSpanishErrorMessage } from '@/lib/error-messages';
 
 export default function ConfigPage() {
     const router = useRouter();
@@ -21,8 +22,8 @@ export default function ConfigPage() {
             const seedResults = await seedDatabase();
             setResults(seedResults);
             router.refresh();
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err) {
+            setError(getSpanishErrorMessage(err));
         } finally {
             setLoading(false);
         }

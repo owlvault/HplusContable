@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AlertTriangle, Clock, CheckCircle, XCircle, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
+import { AlertTriangle, Clock, CheckCircle, XCircle, ChevronRight, TrendingUp } from 'lucide-react';
 import { getNotificationSummary, getDueNotifications, DueNotification } from '@/actions/notifications';
 import Link from 'next/link';
 

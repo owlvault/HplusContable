@@ -32,7 +32,7 @@ export function ReportChart({ data, type, title }: ChartProps) {
                             cx="50%"
                             cy="50%"
                             labelLine={false}
-                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                            label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                             outerRadius={80}
                             fill="#8884d8"
                             dataKey="value"
@@ -41,7 +41,7 @@ export function ReportChart({ data, type, title }: ChartProps) {
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
                         </Pie>
-                        <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                        <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                         <Legend />
                     </PieChart>
                 </ResponsiveContainer>
@@ -56,8 +56,8 @@ export function ReportChart({ data, type, title }: ChartProps) {
                 <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                    <YAxis tickFormatter={(value) => formatCurrency(value)} tick={{ fontSize: 10 }} />
-                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                    <YAxis tickFormatter={(value) => formatCurrency(Number(value))} tick={{ fontSize: 10 }} />
+                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                     <Bar dataKey="value" fill="#0088FE" radius={[4, 4, 0, 0]} />
                 </BarChart>
             </ResponsiveContainer>

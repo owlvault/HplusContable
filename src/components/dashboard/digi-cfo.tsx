@@ -46,7 +46,7 @@ export function DigiCFO() {
 
             const data = await response.json();
             setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
-        } catch (error) {
+        } catch {
             setMessages(prev => [...prev, { 
                 role: 'assistant', 
                 content: 'Lo siento, hubo un error al procesar tu consulta. Por favor, intenta de nuevo.' 

@@ -7,6 +7,7 @@ import { calculateInvoiceTotals } from '@/lib/utils/invoice-calc';
 import { getThirdParties } from '@/actions/third-parties';
 import { TAX_RATES, InvoiceLine } from '@/types/invoices';
 import { Plus, Trash2, Save, ArrowLeft } from 'lucide-react';
+import { getSpanishErrorMessage } from '@/lib/error-messages';
 
 interface ThirdParty {
     id: string;
@@ -155,8 +156,8 @@ export function InvoiceForm() {
                 lines,
             });
             router.push('/facturas');
-        } catch (error: any) {
-            alert(error.message);
+        } catch (error) {
+            alert(getSpanishErrorMessage(error));
         } finally {
             setLoading(false);
         }

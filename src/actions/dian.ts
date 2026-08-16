@@ -249,7 +249,7 @@ export async function getElectronicInvoiceStatus(invoiceId: string) {
 }
 
 // Placeholder for future DIAN integration
-export async function sendInvoiceToDian(invoiceId: string) {
+export async function sendInvoiceToDian(_invoiceId: string) {
     await enforcePermission('facturas', 'approve');
     
     // This is a placeholder for future DIAN integration

@@ -1,6 +1,6 @@
 'use client';
 
-import { Document, Page, Text, View, StyleSheet, Font, pdf } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer';
 import { InvoiceWithDetails } from '@/types/invoices';
 
 // Register fonts (using default for now)
