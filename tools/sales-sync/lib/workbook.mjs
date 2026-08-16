@@ -32,7 +32,38 @@ export const EXPORT_SHEET_NAME = 'ERP_EXPORT';
 /** Prefijo de los rangos con nombre que se leen como supuestos. */
 export const NAMED_RANGE_PREFIX = 'HPLUS_';
 
-const REQUIRED_FIELDS = ['description', 'quantity', 'unit_price'];
+/**
+ * Rellena los campos que en los modelos reales no tienen columna propia.
+ *
+ * En un modelo de servicios profesionales la tabla suele ser
+ * `Rol | Horas | Tarifa | Subtotal`: no hay columna "Descripción" porque el
+ * rol *es* la descripción, ni "Cantidad" porque las horas *son* la cantidad.
+ */
+function normalizeColumns(columns) {
+    const c = { ...columns };
+    if (c.description == null) c.description = c.role_family ?? c.deliverable ?? null;
+    if (c.quantity == null) c.quantity = c.hours ?? null;
+    if (c.description == null) delete c.description;
+    if (c.quantity == null) delete c.quantity;
+    return c;
+}
+
+/**
+ * Una tabla es utilizable si identifica la línea, su volumen y su valor.
+ * El valor puede venir como precio unitario o como monto total: del segundo
+ * se deriva el primero dividiendo por la cantidad.
+ */
+function hasRequiredColumns(c) {
+    return c.description != null && c.quantity != null && (c.unit_price != null || c.total != null);
+}
+
+function missingColumns(c) {
+    const missing = [];
+    if (c.description == null) missing.push('descripción o rol');
+    if (c.quantity == null) missing.push('cantidad u horas');
+    if (c.unit_price == null && c.total == null) missing.push('precio unitario o total');
+    return missing;
+}
 
 /**
  * Lee un modelo financiero y devuelve una propuesta normalizada.
@@ -53,7 +84,12 @@ export async function parseFinancialModel(filePath, context = {}) {
     }
 
     const warnings = [];
-    const assumptions = readNamedRanges(workbook, warnings);
+    // Los rangos con nombre son la fuente preferida porque son explícitos;
+    // la hoja de supuestos rellena lo que falte sin pisarlos.
+    const assumptions = mergeAssumptions(
+        readNamedRanges(workbook, warnings),
+        readAssumptionsSheet(workbook)
+    );
 
     let extraction = extractFromExportSheet(workbook, warnings);
     let strategy = 'ERP_EXPORT';
@@ -79,6 +115,12 @@ export async function parseFinancialModel(filePath, context = {}) {
             ],
         };
     }
+
+    // En los modelos de HPlus el precio y el costo viven en hojas distintas:
+    // la tabla de venta lleva la tarifa y una hoja interna de margen lleva el
+    // costo por hora, unidos por el nombre del rol. Sin este cruce la propuesta
+    // entraría sin costo y el margen sería inventado.
+    applyCostJoin(workbook, extraction, context.mapping, warnings);
 
     const header = readHeaderFields(workbook, assumptions, context);
     const proposal = {
@@ -114,7 +156,7 @@ function extractFromExportSheet(workbook, warnings) {
     const headerRow = sheet.getRow(1);
     const columns = mapColumns(headerRow);
 
-    const missing = REQUIRED_FIELDS.filter((f) => !(f in columns));
+    const missing = missingColumns(columns);
     if (missing.length > 0) {
         warnings.push(
             `La hoja ${EXPORT_SHEET_NAME} existe pero le faltan columnas obligatorias: ${missing.join(', ')}.`
@@ -162,11 +204,13 @@ function extractFromMapping(workbook, mapping, warnings) {
         Object.assign(columns, mapColumns(sheet.getRow(headerRowNumber)));
     }
 
-    const missing = REQUIRED_FIELDS.filter((f) => !(f in columns));
+    const resolved = normalizeColumns(columns);
+    const missing = missingColumns(resolved);
     if (missing.length > 0) {
         warnings.push(`El perfil de mapeo no resuelve: ${missing.join(', ')}.`);
         return null;
     }
+    Object.assign(columns, resolved);
 
     return {
         lines: readLines(sheet, columns, headerRowNumber + 1, warnings),
@@ -186,6 +230,7 @@ function extractFromMapping(workbook, mapping, warnings) {
  */
 function extractByHeuristics(workbook, warnings) {
     let best = null;
+    const costOnly = [];
 
     for (const sheet of workbook.worksheets) {
         if (sheet.state === 'hidden' || sheet.state === 'veryHidden') continue;
@@ -193,20 +238,49 @@ function extractByHeuristics(workbook, warnings) {
         const limit = Math.min(sheet.rowCount, 40); // los encabezados nunca están muy abajo
         for (let r = 1; r <= limit; r++) {
             const columns = mapColumns(sheet.getRow(r));
-            const matched = Object.keys(columns);
-            if (!REQUIRED_FIELDS.every((f) => matched.includes(f))) continue;
+
+            if (!hasRequiredColumns(columns)) {
+                // Una tabla con rol y costo pero sin precio es un modelo de
+                // costeo, no una propuesta. Se registra para poder decirlo.
+                if (columns.description != null && columns.quantity != null && columns.total_cost != null) {
+                    costOnly.push(sheet.name);
+                }
+                continue;
+            }
 
             const lines = readLines(sheet, columns, r + 1, []);
             if (lines.length === 0) continue;
 
-            const score = lines.length * 10 + matched.length;
+            // La calidad de las columnas pesa mucho más que el número de filas:
+            // una hoja de supuestos larga no debe ganarle a la tabla de precios.
+            let score = 0;
+            if (columns.unit_price != null) score += 60;
+            if (columns.hours != null) score += 20;
+            if (columns.unit_direct_cost != null) score += 15;
+            if (columns.unit_list_price != null) score += 10;
+            if (columns.role_family != null) score += 10;
+            score += Object.keys(columns).length * 3;
+            score += Math.min(lines.length, 30);
+            // La hoja interna de margen aporta el costo, no las líneas.
+            if (/margen|interno/.test(slug(sheet.name))) score -= 50;
+
             if (!best || score > best.score) {
                 best = { lines, columns, headerRow: r, sheet: sheet.name, score };
             }
         }
     }
 
-    if (!best) return null;
+    if (!best) {
+        if (costOnly.length > 0) {
+            warnings.push(
+                `La hoja "${costOnly[0]}" costea por rol pero no tiene precio de venta por línea. ` +
+                'Es un modelo de costeo: el precio se fija a nivel agregado (margen objetivo), ' +
+                'así que no se puede derivar un margen unitario. Cotiza las líneas en el ERP o ' +
+                'añade una columna de tarifa de venta al modelo.'
+            );
+        }
+        return null;
+    }
 
     warnings.push(
         `Líneas deducidas por heurística de la hoja "${best.sheet}" (encabezados en la fila ${best.headerRow}). Revisar antes de dar el margen por bueno.`
@@ -217,6 +291,150 @@ function extractByHeuristics(workbook, warnings) {
     const winner = workbook.worksheets.find((ws) => ws.name === best.sheet);
     best.lines = readLines(winner, best.columns, best.headerRow + 1, warnings);
     return best;
+}
+
+// ---------------------------------------------------------------------------
+// Cruce del costo alojado en otra hoja
+// ---------------------------------------------------------------------------
+
+/**
+ * Busca una hoja que asocie rol con costo unitario.
+ *
+ * Prefiere las hojas cuyo nombre habla de margen o costo interno, que es la
+ * convención de los modelos de HPlus ("Margen_HPlus", uso interno).
+ */
+function findCostTable(workbook, excludeSheetName) {
+    const candidates = workbook.worksheets
+        .filter((ws) => ws.name !== excludeSheetName)
+        .filter((ws) => ws.state !== 'hidden' && ws.state !== 'veryHidden')
+        .sort((a, b) => priority(b.name) - priority(a.name));
+
+    for (const sheet of candidates) {
+        const limit = Math.min(sheet.rowCount, 40);
+        for (let r = 1; r <= limit; r++) {
+            const columns = mapColumns(sheet.getRow(r));
+            if (columns.unit_direct_cost == null || columns.description == null) continue;
+
+            const costs = new Map();
+            let blankStreak = 0;
+
+            for (let d = r + 1; d <= sheet.rowCount; d++) {
+                const row = sheet.getRow(d);
+                const key = toText(row.getCell(columns.description).value);
+                const cost = toNumber(row.getCell(columns.unit_direct_cost).value);
+
+                if (!key) {
+                    if (++blankStreak >= 2) break;
+                    continue;
+                }
+                blankStreak = 0;
+                if (isTotalRow(key) || cost == null || cost <= 0) continue;
+                costs.set(slug(key), cost);
+            }
+
+            if (costs.size > 0) return { costs, sheet: sheet.name, headerRow: r };
+        }
+    }
+    return null;
+
+    function priority(name) {
+        const s = slug(name);
+        if (/margen/.test(s)) return 3;
+        if (/costo interno|interno/.test(s)) return 2;
+        if (/costo/.test(s)) return 1;
+        return 0;
+    }
+}
+
+/** Empareja por nombre exacto y, si falla, por las primeras palabras. */
+function lookupCost(costs, ...keys) {
+    for (const key of keys) {
+        if (!key) continue;
+        const s = slug(key);
+        if (costs.has(s)) return costs.get(s);
+    }
+    for (const key of keys) {
+        if (!key) continue;
+        const prefix = slug(key).split(' ').slice(0, 3).join(' ');
+        if (prefix.length < 6) continue;
+        for (const [candidate, cost] of costs) {
+            if (candidate.startsWith(prefix)) return cost;
+        }
+    }
+    return null;
+}
+
+/** Completa el costo unitario de las líneas que no lo traen. */
+function applyCostJoin(workbook, extraction, mapping, warnings) {
+    const pending = extraction.lines.filter((l) => !l.is_passthrough && !(l.unit_direct_cost > 0));
+    if (pending.length === 0) return;
+
+    // El perfil de mapeo puede fijar la hoja de costo explícitamente.
+    const table = mapping?.cost_sheet
+        ? findCostTableFromMapping(workbook, mapping.cost_sheet, warnings)
+        : findCostTable(workbook, extraction.sheet);
+
+    if (!table) {
+        warnings.push(
+            `${pending.length} línea(s) sin costo unitario y no se encontró una hoja de costos que las complete.`
+        );
+        return;
+    }
+
+    let matched = 0;
+    for (const line of pending) {
+        const cost = lookupCost(table.costs, line.role_family, line.description);
+        if (cost != null) {
+            line.unit_direct_cost = cost;
+            line.cost_source = 'HOJA_COSTOS';
+            matched++;
+        }
+    }
+
+    if (matched > 0) {
+        warnings.push(
+            `Costo unitario de ${matched} de ${pending.length} línea(s) tomado de la hoja "${table.sheet}".`
+        );
+    } else {
+        warnings.push(
+            `La hoja "${table.sheet}" tiene costos, pero ningún rol coincidió con las líneas de la propuesta.`
+        );
+    }
+}
+
+function findCostTableFromMapping(workbook, spec, warnings) {
+    const sheet = workbook.worksheets.find((ws) => slug(ws.name) === slug(spec.sheet));
+    if (!sheet) {
+        warnings.push(`El perfil de mapeo apunta a la hoja de costos "${spec.sheet}", que no existe.`);
+        return null;
+    }
+
+    const headerRow = spec.header_row ?? 1;
+    const byTitle = mapColumns(sheet.getRow(headerRow), { useSynonyms: false });
+    const resolve = (ref) =>
+        typeof ref === 'number'
+            ? ref
+            : /^[A-Z]{1,3}$/i.test(ref)
+              ? columnLetterToNumber(ref)
+              : byTitle[slug(ref)];
+
+    const keyCol = resolve(spec.key_column ?? 'Rol');
+    const costCol = resolve(spec.cost_column);
+    if (!keyCol || !costCol) {
+        warnings.push(`El perfil de mapeo no resuelve las columnas de la hoja de costos "${spec.sheet}".`);
+        return null;
+    }
+
+    const costs = new Map();
+    for (let r = headerRow + 1; r <= sheet.rowCount; r++) {
+        const row = sheet.getRow(r);
+        const key = toText(row.getCell(keyCol).value);
+        const cost = toNumber(row.getCell(costCol).value);
+        if (!key || isTotalRow(key) || cost == null || cost <= 0) continue;
+        costs.set(slug(key), cost);
+    }
+
+    return costs.size > 0 ? { costs, sheet: sheet.name, headerRow } : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -249,7 +467,7 @@ function mapColumns(row, { useSynonyms = true } = {}) {
         // reales la tabla principal está a la izquierda de las auxiliares.
         if (field && !(field in columns)) columns[field] = c;
     }
-    return columns;
+    return normalizeColumns(columns);
 }
 
 /** Lee las filas de datos hasta encontrar el fin de la tabla. */
@@ -258,11 +476,15 @@ function readLines(sheet, columns, startRow, warnings) {
     let blankStreak = 0;
     let lineNumber = 0;
 
+    // Una columna ausente es lo normal: no toda tabla trae precio unitario,
+    // algunas solo traen el monto total de la línea.
+    const cell = (row, field) => (columns[field] ? row.getCell(columns[field]).value : null);
+
     for (let r = startRow; r <= sheet.rowCount; r++) {
         const row = sheet.getRow(r);
-        const description = toText(row.getCell(columns.description).value);
-        const quantity = toNumber(row.getCell(columns.quantity).value);
-        const unitPrice = toNumber(row.getCell(columns.unit_price).value);
+        const description = toText(cell(row, 'description'));
+        const quantity = toNumber(cell(row, 'quantity'));
+        const unitPrice = toNumber(cell(row, 'unit_price'));
 
         if (!description && quantity == null && unitPrice == null) {
             // Dos filas vacías seguidas cierran la tabla; una sola puede ser
@@ -274,6 +496,16 @@ function readLines(sheet, columns, startRow, warnings) {
 
         if (!description) continue;
         if (isTotalRow(description)) continue; // la fila de totales no es una línea
+
+        // Un texto sin ningún número al lado es el título de la siguiente
+        // sección ("3. FASES DEL PROYECTO"), no una línea. Los modelos apilan
+        // varias tablas en una misma hoja separadas solo por estos títulos,
+        // así que aquí termina la tabla que se venía leyendo.
+        const hasValue = quantity != null || unitPrice != null || toNumber(cell(row, 'total')) != null;
+        if (!hasValue) {
+            if (lines.length > 0) break;
+            continue;
+        }
 
         const line = buildLine(row, columns, ++lineNumber, description, quantity, unitPrice);
         if (line) lines.push(line);
@@ -394,6 +626,57 @@ function readNamedRanges(workbook, warnings) {
     return assumptions;
 }
 
+/**
+ * Lee la hoja de supuestos como pares etiqueta/valor.
+ *
+ * Es el patrón universal de estos modelos: una columna con el nombre del
+ * parámetro y la siguiente con su valor. Capturarlos es lo que después
+ * permite responder "¿por qué cobramos esto?" sin abrir el Excel.
+ */
+function readAssumptionsSheet(workbook) {
+    const sheet = workbook.worksheets.find((ws) => /supuesto|parametro|assumption/.test(slug(ws.name)));
+    if (!sheet) return [];
+
+    const found = [];
+    const limit = Math.min(sheet.rowCount, 80);
+
+    for (let r = 1; r <= limit && found.length < 40; r++) {
+        const values = sheet.getRow(r).values ?? [];
+        const label = toText(values[1]);
+        if (!label) continue;
+
+        // Los títulos de sección ("1. PARÁMETROS GENERALES") no traen valor.
+        const numeric = toNumber(values[2]);
+        const text = toText(values[2]);
+        if (numeric == null && !text) continue;
+
+        // Al llegar a la fila de encabezados de una tabla se acaban los
+        // supuestos: lo que sigue son líneas de datos, no parámetros.
+        if (Object.keys(mapColumns(sheet.getRow(r))).length >= 3) break;
+
+        const key = slug(label).replace(/ /g, '_').slice(0, 110);
+        if (!key) continue;
+
+        found.push({
+            category: categorizeAssumption(key),
+            key,
+            label,
+            value_numeric: numeric,
+            value_text: numeric == null ? text : null,
+            unit: /%|\(\s*%\s*\)/.test(label) ? '%' : null,
+            source_reference: `'${sheet.name}'!B${r}`,
+        });
+    }
+
+    return found;
+}
+
+/** Une supuestos evitando claves duplicadas; gana el primero. */
+function mergeAssumptions(preferred, fallback) {
+    const seen = new Set(preferred.map((a) => a.key));
+    return [...preferred, ...fallback.filter((a) => !seen.has(a.key))];
+}
+
 function categorizeAssumption(key) {
     if (/costo|salario|prestacional|hora|overhead/.test(key)) return 'COSTO';
     if (/precio|tarifa|descuento|margen/.test(key)) return 'PRECIO';
@@ -423,7 +706,13 @@ function readHeaderFields(workbook, assumptions, context) {
         title: named('titulo')?.value_text ?? null,
         client_name: named('cliente')?.value_text ?? null,
         currency: named('moneda')?.value_text ?? null,
-        fx_rate: named('trm')?.value_numeric ?? named('fx_rate')?.value_numeric ?? null,
+        // La TRM puede venir como rango con nombre o como una fila cualquiera
+        // de la hoja de supuestos; se acepta cualquiera de las dos.
+        fx_rate:
+            named('trm')?.value_numeric ??
+            named('fx_rate')?.value_numeric ??
+            assumptions.find((a) => /^(trm|tasa_de_cambio|tipo_de_cambio|fx)/.test(a.key))?.value_numeric ??
+            null,
         engagement_model: normalizeEngagementModel(named('modalidad')?.value_text),
         issue_date: null,
         valid_until: null,
@@ -573,6 +862,9 @@ function scoreConfidence(strategy, extraction, proposal, warnings) {
     if (ratioCosto === 0) score -= 30;
     else if (ratioCosto < 0.8) score -= 15;
 
+    // Una tabla que declara a la vez la tarifa de venta y el costo interno no
+    // deja nada que adivinar: el margen sale del modelo, no de una inferencia.
+    if (matched.includes('unit_price') && matched.includes('unit_direct_cost')) score += 20;
     if (matched.includes('role_family')) score += 5;
     if (matched.includes('hours')) score += 5;
     if (proposal.assumptions.length > 0) score += 5;

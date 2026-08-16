@@ -314,11 +314,15 @@ quien cotiza no autoriza su propio descuento.
 - **Los datos semilla son de referencia, no de HPlus.** El catálogo de roles y
   la lista de precios traen valores de ejemplo que hay que reemplazar antes de
   operar. El módulo no puede calcular márgenes reales con tarifas inventadas.
-- **El parser no se probó contra las propuestas reales**, porque la carpeta no
-  es accesible desde el entorno donde se construyó. Se validó contra una
-  carpeta sintética que reproduce la estructura y los tres formatos de modelo.
-  El primer `--dry-run` sobre la carpeta real es el que dirá si hacen falta
-  perfiles de mapeo, y para eso existe el mecanismo de configuración.
+- **Solo uno de los tres arquetipos de modelo financiero es importable.** El
+  parser se validó contra tres modelos reales de HPlus. El que cotiza por rol
+  con tarifa de venta y costo interno se extrae completo y cuadra al peso con
+  los totales que el propio modelo declara. Los otros dos no: un modelo de
+  costeo que fija el precio a nivel agregado no tiene margen unitario que
+  extraer, y un caso de negocio TCO del cliente no es una propuesta. El
+  sincronizador lo dice en vez de inventar líneas — pero significa que parte de
+  la carpeta Comercial no se cargará sola hasta que esos modelos incorporen una
+  tarifa de venta por línea. Detalle en `tools/sales-sync/README.md`.
 - **La carga de horas reales no tiene UI todavía.** La tabla
   `project_time_entries` y todo el cálculo de margen real están listos, pero
   las horas deben entrar por importación o por API mientras se construye la

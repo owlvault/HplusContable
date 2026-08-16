@@ -158,22 +158,41 @@ export function toText(raw) {
  * El orden importa: se elige la coincidencia más específica primero.
  */
 export const HEADER_SYNONYMS = {
-    description: ['descripcion', 'concepto', 'item', 'actividad', 'detalle', 'servicio', 'linea'],
-    role_family: ['rol', 'perfil', 'recurso', 'cargo', 'posicion'],
+    // --- Identificación de la línea ---
+    description: ['descripcion', 'concepto', 'actividad', 'detalle', 'servicio', 'item', 'linea', 'tarea'],
+    role_family: ['rol', 'perfil', 'recurso', 'cargo', 'posicion', 'role'],
     seniority: ['seniority', 'nivel', 'senioridad', 'experiencia'],
     workstream: ['frente', 'workstream', 'modulo', 'componente', 'area'],
     phase: ['fase', 'etapa', 'phase'],
     deliverable: ['entregable', 'producto', 'deliverable'],
-    quantity: ['cantidad', 'qty', 'cant', 'unidades', 'volumen'],
+
+    // --- Volumen ---
+    // `headcount` y `persona meses` aparecen en los modelos que costean por
+    // dedicación mensual en vez de por hora.
+    quantity: ['cantidad', 'qty', 'cant', 'unidades', 'volumen', 'headcount', 'head count', 'personas', 'persona meses', 'persona mes', 'fte'],
     hours: ['horas', 'hh', 'hrs', 'esfuerzo', 'horas hombre', 'horas totales'],
     unit: ['unidad', 'um', 'unidad de medida'],
-    unit_list_price: ['precio lista', 'tarifa lista', 'valor lista', 'precio de lista', 'tarifa plena'],
-    unit_price: ['precio unitario', 'tarifa', 'precio', 'valor unitario', 'tarifa hora', 'precio venta', 'valor hora', 'tarifa venta'],
+
+    // --- Precio ---
+    // "Tarifa base" y "Tarifa ajustada" conviven en la misma tabla: la primera
+    // es el precio de lista y la segunda el efectivamente ofrecido. Si ambas
+    // cayeran en el mismo campo se perdería el descuento.
+    unit_list_price: ['tarifa base', 'tarifa lista', 'tarifa plena', 'tarifa nominal', 'precio base', 'precio lista', 'precio de lista', 'valor lista'],
+    unit_price: ['tarifa ajustada', 'tarifa venta', 'tarifa de venta', 'tarifa hora', 'precio unitario', 'precio venta', 'precio de venta', 'valor unitario', 'valor hora', 'tarifa', 'precio'],
     discount_rate: ['descuento', 'dcto', 'rebaja', 'discount'],
-    unit_direct_cost: ['costo unitario', 'costo hora', 'costo', 'coste', 'costo directo', 'tarifa costo', 'cost'],
+
+    // --- Costo unitario ---
+    unit_direct_cost: ['costo interno', 'costo hora', 'costo unitario', 'costo mensual total', 'costo mensual', 'tarifa costo', 'coste unitario'],
     unit_indirect_cost: ['costo indirecto', 'overhead', 'gastos indirectos', 'indirecto'],
+
+    // --- Montos de la línea (no unitarios) ---
+    // `costo directo` y `costo total` son montos por rol, no tarifas: si se
+    // leyeran como costo unitario el margen saldría absurdo.
+    total: ['valor total', 'precio total', 'importe total', 'valor venta', 'subtotal', 'venta', 'monto', 'importe', 'total'],
+    total_cost: ['costo directo', 'costo total', 'costo del rol', 'coste total'],
+    margin_amount: ['margen'],
+
     tax_rate: ['iva', 'impuesto', 'tax'],
-    total: ['total', 'valor total', 'subtotal', 'monto', 'importe'],
     is_passthrough: ['reembolsable', 'passthrough', 'pass through', 'costo reembolsable'],
 };
 
@@ -189,9 +208,13 @@ export function matchHeader(header) {
     for (const [field, synonyms] of Object.entries(HEADER_SYNONYMS)) {
         for (const syn of synonyms) {
             if (s === syn) return field; // exacto gana siempre
-            if ((s.includes(syn) || syn.includes(s)) && syn.length >= 4) {
-                // Ante ambigüedad, gana el sinónimo más largo (más específico):
-                // "precio lista" debe ganarle a "precio".
+            if (s.includes(syn) && syn.length >= 4) {
+                // Ante ambigüedad gana el sinónimo más largo, que es el más
+                // específico: "tarifa base" debe ganarle a "tarifa", y
+                // "costo total" a "costo". Los empates los resuelve el orden
+                // de declaración de HEADER_SYNONYMS.
+                // Solo se acepta que el encabezado contenga al sinónimo, no al
+                // revés: "Valor" no es evidencia suficiente de "valor unitario".
                 if (!best || syn.length > best.length) best = { field, length: syn.length };
             }
         }

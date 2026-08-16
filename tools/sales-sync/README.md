@@ -132,6 +132,51 @@ formato de miles colombiano (`$ 1.234.567,89`) y los paréntesis contables.
 Las propuestas así extraídas entran al ERP marcadas **para revisión** y no
 contaminan los indicadores hasta que alguien las valide.
 
+## Qué pasa con los modelos reales de HPlus
+
+El parser se probó contra tres modelos reales. Salieron tres arquetipos, y no
+todos son importables — por buenas razones:
+
+### 1. Modelo de venta por rol (HypnosAI) — se importa completo
+
+Una tabla con `Rol | Horas | Tarifa venta | Costo interno`. Es el caso ideal:
+trae los dos lados del margen en la misma fila.
+
+El parser lo extrae con **77% de confianza** y los totales cuadran al peso con
+los que el propio modelo declara en su hoja de margen: 1.750 h, $290.600.000 de
+venta, $153.050.000 de costo, 47,33% de margen bruto.
+
+Si el precio está en una hoja (`CAPEX_Implementacion`) y el costo en otra
+(`Margen_HPlus`), el sincronizador las cruza solo, emparejando por nombre de rol.
+
+### 2. Modelo de costeo sin precio por línea (Presupuesto Plataforma) — no se importa
+
+Costea por `Rol | Headcount | Salario | Dedicación por fase | Costo total`, y
+el precio se fija después a nivel agregado aplicando un margen objetivo
+(20% CAPEX / 25% OPEX) en una hoja simuladora.
+
+**No hay precio de venta por línea, así que no hay margen unitario que extraer.**
+El sincronizador lo dice explícitamente en vez de inventarlo: importar el costo
+como si fuera precio daría márgenes de cero y contaminaría todos los indicadores.
+
+Para que entre: añade una columna de tarifa de venta por rol al modelo, o
+cotiza las líneas directamente en el ERP usando las tarifas de la lista de precios.
+
+### 3. Caso de negocio / TCO del cliente (PLATEA) — no es una propuesta
+
+Un modelo de costo total de propiedad a 10 años, en USD, con la plantilla de
+personal del *cliente*. No es una oferta de HPlus con precios de venta.
+
+El sincronizador lo registra como documento con su hash, para trazabilidad,
+pero no fabrica líneas de propuesta. Es el comportamiento correcto: un caso de
+negocio no pertenece al pipeline de márgenes.
+
+### La recomendación
+
+Añade la hoja `ERP_EXPORT` a la plantilla de modelo financiero. Con ella la
+extracción sube a 100% y deja de depender de dónde quedó cada tabla. Mientras
+tanto la heurística cubre bien el arquetipo 1, que es el que se vende.
+
 ## Idempotencia
 
 Cada archivo se identifica por el SHA-256 de su contenido. Reejecutar el
