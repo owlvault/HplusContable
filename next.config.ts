@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
         'factura-treasury.cluster-8.preview.emergentcf.cloud',
         'kawsay-mvp.preview.emergentagent.com',
         'kawsay-mvp.cluster-8.preview.emergentcf.cloud',
+        // Firebase App Hosting: dominio por defecto (*.web.app) y el que
+        // asigna el backend (*.hosted.app). Un dominio propio conectado
+        // aparte hay que agregarlo aquí a mano.
+        '*.web.app',
+        '*.hosted.app',
       ],
     },
   },
