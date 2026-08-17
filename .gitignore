@@ -41,8 +41,10 @@ yarn-error.log*
 !.env.example
 
 
-# vercel
+# vercel & firebase
 .vercel
+.firebase
+firebase-debug.log*
 
 # typescript
 *.tsbuildinfo

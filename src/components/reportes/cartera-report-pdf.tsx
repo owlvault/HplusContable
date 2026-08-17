@@ -136,7 +136,7 @@ const CarteraReportDocument = ({ title, data, type }: CarteraReportPDFProps) => 
                         <Text style={styles.colAmount}>{formatCurrency(item.total_invoiced)}</Text>
                         <Text style={styles.colAmount}>{formatCurrency(item.total_paid)}</Text>
                         <Text style={styles.colAmount}>{formatCurrency(item.total_pending)}</Text>
-                        <Text style={[styles.colAmount, item.overdue_amount > 0 ? styles.overdue : undefined]}>
+                        <Text style={item.overdue_amount > 0 ? [styles.colAmount, styles.overdue] : styles.colAmount}>
                             {formatCurrency(item.overdue_amount)}
                         </Text>
                     </View>
@@ -149,7 +149,7 @@ const CarteraReportDocument = ({ title, data, type }: CarteraReportPDFProps) => 
                     <Text style={styles.colAmount}>{formatCurrency(totals.invoiced)}</Text>
                     <Text style={styles.colAmount}>{formatCurrency(totals.paid)}</Text>
                     <Text style={styles.colAmount}>{formatCurrency(totals.pending)}</Text>
-                    <Text style={[styles.colAmount, totals.overdue > 0 ? styles.overdue : undefined]}>
+                    <Text style={totals.overdue > 0 ? [styles.colAmount, styles.overdue] : styles.colAmount}>
                         {formatCurrency(totals.overdue)}
                     </Text>
                 </View>
