@@ -11,7 +11,6 @@
     "types:gen": "node scripts/gen-database-types.mjs"
   },
   "dependencies": {
-    "@dataconnect/generated": "file:src/dataconnect-generated",
     "@radix-ui/react-dialog": "^1.1.20",
     "@radix-ui/react-toast": "^1.2.20",
     "@react-pdf/renderer": "^4.5.1",
