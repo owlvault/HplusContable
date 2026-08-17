@@ -180,10 +180,11 @@ const BalanceSheetDocument = ({ assets, liabilities, equity, totalAssets, totalL
                 </View>
             </View>
 
-            <View style={[
-                styles.balanceCheck,
-                Math.abs(totalAssets - (totalLiabilities + totalEquity)) >= 0.01 ? styles.balanceCheckError : undefined
-            ]}>
+            <View style={
+                Math.abs(totalAssets - (totalLiabilities + totalEquity)) >= 0.01 
+                    ? [styles.balanceCheck, styles.balanceCheckError] 
+                    : styles.balanceCheck
+            }>
                 <Text>
                     {Math.abs(totalAssets - (totalLiabilities + totalEquity)) < 0.01 
                         ? '✓ Ecuación contable balanceada (Activo = Pasivo + Patrimonio)'
