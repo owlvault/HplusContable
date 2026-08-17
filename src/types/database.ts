@@ -58,6 +58,14 @@ export interface Database {
                     is_client: boolean
                     is_provider: boolean
                     is_employee: boolean
+                    is_active: boolean
+                    tax_regime: string
+                    is_self_withholding: boolean
+                    is_vat_withholding_agent: boolean
+                    is_ica_withholding_agent: boolean
+                    ciiu_code: string | null
+                    tax_responsibilities: string[]
+                    ica_rate_x_mil: number | null
                     created_at: string
                     updated_at: string
                 }
@@ -74,6 +82,14 @@ export interface Database {
                     is_client?: boolean
                     is_provider?: boolean
                     is_employee?: boolean
+                    is_active?: boolean
+                    tax_regime?: string
+                    is_self_withholding?: boolean
+                    is_vat_withholding_agent?: boolean
+                    is_ica_withholding_agent?: boolean
+                    ciiu_code?: string | null
+                    tax_responsibilities?: string[]
+                    ica_rate_x_mil?: number | null
                     created_at?: string
                     updated_at?: string
                 }
@@ -90,7 +106,80 @@ export interface Database {
                     is_client?: boolean
                     is_provider?: boolean
                     is_employee?: boolean
+                    is_active?: boolean
+                    tax_regime?: string
+                    is_self_withholding?: boolean
+                    is_vat_withholding_agent?: boolean
+                    is_ica_withholding_agent?: boolean
+                    ciiu_code?: string | null
+                    tax_responsibilities?: string[]
+                    ica_rate_x_mil?: number | null
                     created_at?: string
+                    updated_at?: string
+                }
+            }
+            company_settings: {
+                Row: {
+                    id: string
+                    singleton: boolean
+                    legal_name: string
+                    trade_name: string | null
+                    nit: string
+                    dv: number | null
+                    tax_regime: string
+                    is_self_withholding: boolean
+                    is_vat_withholding_agent: boolean
+                    is_ica_withholding_agent: boolean
+                    ciiu_code: string | null
+                    address: string | null
+                    city: string | null
+                    department: string | null
+                    phone: string | null
+                    email: string | null
+                    fiscal_year_start_month: number
+                    default_accounts: Json
+                    created_at: string
+                    updated_at: string
+                }
+                Insert: {
+                    id?: string
+                    singleton?: boolean
+                    legal_name: string
+                    trade_name?: string | null
+                    nit: string
+                    dv?: number | null
+                    tax_regime?: string
+                    is_self_withholding?: boolean
+                    is_vat_withholding_agent?: boolean
+                    is_ica_withholding_agent?: boolean
+                    ciiu_code?: string | null
+                    address?: string | null
+                    city?: string | null
+                    department?: string | null
+                    phone?: string | null
+                    email?: string | null
+                    fiscal_year_start_month?: number
+                    default_accounts?: Json
+                    created_at?: string
+                    updated_at?: string
+                }
+                Update: {
+                    legal_name?: string
+                    trade_name?: string | null
+                    nit?: string
+                    dv?: number | null
+                    tax_regime?: string
+                    is_self_withholding?: boolean
+                    is_vat_withholding_agent?: boolean
+                    is_ica_withholding_agent?: boolean
+                    ciiu_code?: string | null
+                    address?: string | null
+                    city?: string | null
+                    department?: string | null
+                    phone?: string | null
+                    email?: string | null
+                    fiscal_year_start_month?: number
+                    default_accounts?: Json
                     updated_at?: string
                 }
             }
