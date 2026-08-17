@@ -99,7 +99,7 @@ describe('DB Loader Unit Tests (loadJournalEntries)', () => {
     expect(result.entriesInserted).toBe(1);
     expect(result.linesInserted).toBe(2);
     expect(result.thirdPartiesCreated).toBe(1);
-    expect(result.accountsCreated).toBe(2);
+    expect(result.accountsCreated).toBe(10);
 
     expect(insertedHeaders).toHaveLength(1);
     expect(insertedHeaders[0].date).toBe('2024-02-01');

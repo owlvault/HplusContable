@@ -226,7 +226,7 @@ export function inferAccountMeta(
     type,
     level,
     parent_code,
-    is_synthesized: true,
+    is_synthesized: !STANDARD_PUC_NAMES[code],
   };
 }
 

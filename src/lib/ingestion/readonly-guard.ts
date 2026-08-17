@@ -50,7 +50,16 @@ function normalizePathForComparison(p: string): string {
 export function validateBackupPath(filePath: string, customBackupDir?: string): string {
   const baseDir = customBackupDir || process.env.BACKUP_DIR || DEFAULT_BACKUP_DIR;
   const resolvedPath = path.resolve(filePath);
-  
+  const normalizedTarget = normalizePathForComparison(resolvedPath);
+  const normalizedBaseRaw = normalizePathForComparison(baseDir);
+  const normalizedBaseWithSep = normalizedBaseRaw.endsWith(path.sep) ? normalizedBaseRaw : normalizedBaseRaw + path.sep;
+
+  const isInsideOrSame = normalizedTarget === normalizedBaseRaw || normalizedTarget.startsWith(normalizedBaseWithSep);
+  const rel = path.relative(normalizedBaseRaw, normalizedTarget);
+  if (rel.startsWith('..') || path.isAbsolute(rel) || !isInsideOrSame) {
+    throw new PathTraversalError(`Access denied: path ${filePath} escapes allowed backup directory ${baseDir}`);
+  }
+
   if (!fs.existsSync(resolvedPath)) {
     throw new BackupFileNotFoundError(`Backup file not found: ${filePath}`);
   }
@@ -58,17 +67,6 @@ export function validateBackupPath(filePath: string, customBackupDir?: string): 
   const stat = fs.statSync(resolvedPath);
   if (!stat.isFile()) {
     throw new InvalidBackupFileError(`Path is not a regular file: ${filePath}`);
-  }
-
-  const normalizedTarget = normalizePathForComparison(resolvedPath);
-  let normalizedBase = normalizePathForComparison(baseDir);
-  if (!normalizedBase.endsWith(path.sep)) {
-    normalizedBase += path.sep;
-  }
-
-  const rel = path.relative(normalizePathForComparison(baseDir), normalizedTarget);
-  if (rel.startsWith('..') || path.isAbsolute(rel) || !normalizedTarget.startsWith(normalizedBase)) {
-    throw new PathTraversalError(`Access denied: path ${filePath} escapes allowed backup directory ${baseDir}`);
   }
 
   return resolvedPath;

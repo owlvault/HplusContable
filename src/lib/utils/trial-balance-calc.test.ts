@@ -123,7 +123,8 @@ describe('Trial Balance Engine (trial-balance-calc.ts)', () => {
 
     it('5. Prior years net profit/loss (Income - Expenses) carries forward to Equity 360505 (Utilidad) or 361005 (Pérdida)', () => {
       const lines: RawJournalLineData[] = [
-        // 2025 Profit: Revenue 15M, Expenses 9M -> Net Profit = +6M
+        // 2025 Profit: Revenue 15M, Expenses 9M, Cash 6M -> Net Profit = +6M, fully balanced
+        { account_code: '11050501', entry_date: '2025-06-15', debit: 6_000_000, credit: 0 },
         { account_code: '41350501', entry_date: '2025-06-15', debit: 0, credit: 15_000_000 },
         { account_code: '51050601', entry_date: '2025-06-20', debit: 9_000_000, credit: 0 },
       ];

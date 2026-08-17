@@ -325,9 +325,10 @@ export async function parseLibroDiario(
       }
       const entryDate = parsedDateStr || lastSeenDate || new Date().toISOString().substring(0, 10);
 
-      // We no longer update lastSeenVoucherType/Num from rawComprobante 
-      // because in these files rawComprobante on data lines is just a line index ("1", "2")
-      const concept = getCellValueString(rawConcepto) || lastSeenConcept || `Asiento ${lastSeenVoucherType}-${lastSeenVoucherNum}`;
+      const vType = lastSeenVoucherType || (rawComprobanteStr && !rawComprobanteStr.toLowerCase().startsWith('comprobante:') ? rawComprobanteStr : 'DIARIO');
+      const vNum = lastSeenVoucherNum || (getCellValueString(rawNumero).trim() ? getCellValueString(rawNumero).trim() : '1');
+
+      const concept = getCellValueString(rawConcepto) || lastSeenConcept || `Asiento ${vType}-${vNum}`;
       if (getCellValueString(rawConcepto)) lastSeenConcept = getCellValueString(rawConcepto);
 
       let doc = getCellValueString(rawDoc).trim();
@@ -351,7 +352,7 @@ export async function parseLibroDiario(
       };
 
       // Key for grouping entries
-      const entryKey = `${entryDate}_${lastSeenVoucherType}_${lastSeenVoucherNum}`;
+      const entryKey = `${entryDate}_${vType}_${vNum}`;
       const currentKey = currentEntry ? `${currentEntry.date}_${currentEntry.voucher_type}_${currentEntry.voucher_number}` : '';
 
       const isNewEntry = !currentEntry || entryKey !== currentKey;
@@ -364,8 +365,8 @@ export async function parseLibroDiario(
 
         currentEntry = {
           date: entryDate,
-          voucher_type: lastSeenVoucherType || 'DIARIO',
-          voucher_number: lastSeenVoucherNum || '1',
+          voucher_type: vType,
+          voucher_number: vNum,
           description: concept,
           lines: [line],
           total_debit: debito,
