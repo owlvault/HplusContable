@@ -16,6 +16,19 @@ const nextConfig: NextConfig = {
         'factura-treasury.cluster-8.preview.emergentcf.cloud',
         'kawsay-mvp.preview.emergentagent.com',
         'kawsay-mvp.cluster-8.preview.emergentcf.cloud',
+        // Firebase App Hosting.
+        //
+        // El matcher de Next.js (csrf-protection.js) hace que cada '*' del
+        // patrón reemplace EXACTAMENTE una etiqueta entre puntos, no varias.
+        // Un dominio de App Hosting tiene dos etiquetas antes de
+        // "hosted.app" (backend--proyecto y región), así que '*.hosted.app'
+        // no basta: hace falta un '*' por cada etiqueta variable, más el
+        // dominio exacto para no depender de que el patrón siga vigente
+        // si Firebase cambia la convención de nombres.
+        'hplus-contable-web--hplus-contable.us-east4.hosted.app',
+        '*.*.hosted.app',
+        // Dominio corto por defecto (<proyecto>.web.app): una sola etiqueta.
+        '*.web.app',
       ],
     },
   },
