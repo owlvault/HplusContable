@@ -1,6 +1,13 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import {
+    calculateTrialBalance,
+    TrialBalanceOptions,
+    TrialBalanceReport,
+    TrialBalanceItem,
+    RawJournalLineData,
+} from '@/lib/utils/trial-balance-calc';
 
 export interface ClientReport {
     third_party_id: string;
@@ -148,72 +155,99 @@ export async function getPayablesReportBySupplier(): Promise<ClientReport[]> {
 }
 
 // Get trial balance (Balance de Comprobación)
-export async function getTrialBalance(year: number, month: number): Promise<BalanceSheetItem[]> {
+export async function getTrialBalance(
+    yearOrStartDate: number | string,
+    monthOrEndDate?: number | string | Partial<TrialBalanceOptions>,
+    options?: Partial<TrialBalanceOptions>
+): Promise<TrialBalanceReport & TrialBalanceItem[]> {
     const supabase = await createClient();
 
-    // Get all journal lines for the period
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59);
+    let startDate: string;
+    let endDate: string;
+    let queryOptions: Partial<TrialBalanceOptions> = {};
 
-    const { data: lines, error } = await supabase
+    if (typeof yearOrStartDate === 'number') {
+        const year = yearOrStartDate;
+        let month = 1;
+        if (typeof monthOrEndDate === 'number') {
+            month = monthOrEndDate;
+        } else if (typeof monthOrEndDate === 'object' && monthOrEndDate !== null) {
+            queryOptions = monthOrEndDate;
+        }
+        if (options) {
+            queryOptions = { ...queryOptions, ...options };
+        }
+
+        const lastDay = new Date(year, month, 0).getDate();
+        startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+        endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    } else {
+        startDate = yearOrStartDate;
+        if (typeof monthOrEndDate === 'string') {
+            endDate = monthOrEndDate;
+            if (options) queryOptions = options;
+        } else if (typeof monthOrEndDate === 'object' && monthOrEndDate !== null) {
+            endDate = startDate;
+            queryOptions = monthOrEndDate;
+        } else {
+            endDate = startDate;
+            if (options) queryOptions = options;
+        }
+    }
+
+    // Fetch all active journal lines up to endDate
+    const { data: rawLines, error } = await supabase
         .from('journal_lines')
         .select(`
             account_code,
             debit,
             credit,
-            journal_entry:journal_entries!inner(date, state)
+            third_party_id,
+            third_parties(id, document_number, full_name),
+            journal_entry:journal_entries!inner(id, date, state, entry_type)
         `)
-        .gte('journal_entry.date', startDate.toISOString())
-        .lte('journal_entry.date', endDate.toISOString())
+        .lte('journal_entry.date', `${endDate}T23:59:59.999Z`)
         .neq('journal_entry.state', 'ANULADO');
 
     if (error) {
-        console.error('Error fetching journal lines:', error);
-        return [];
+        console.error('Error fetching journal lines for trial balance:', error);
     }
 
-    // Get PUC accounts
-    const { data: accounts } = await supabase
+    // Fetch PUC accounts
+    const { data: pucAccounts } = await supabase
         .from('puc_accounts')
-        .select('code, name, level, nature, type')
+        .select('code, name, nature, type, level, parent_code')
         .order('code');
 
-    if (!accounts) return [];
+    const lines: RawJournalLineData[] = (rawLines || []).map((line: any) => ({
+        account_code: line.account_code,
+        entry_date: line.journal_entry?.date || '',
+        debit: Number(line.debit || 0),
+        credit: Number(line.credit || 0),
+        third_party_id: line.third_party_id || null,
+        document_number: line.third_parties?.document_number || null,
+        third_party_name: line.third_parties?.full_name || null,
+        entry_type: line.journal_entry?.entry_type || null,
+        entry_state: line.journal_entry?.state || null,
+    }));
 
-    // Aggregate by account
-    const balances: Record<string, { debit: number; credit: number }> = {};
-    
-    for (const line of lines || []) {
-        if (!balances[line.account_code]) {
-            balances[line.account_code] = { debit: 0, credit: 0 };
-        }
-        balances[line.account_code].debit += line.debit || 0;
-        balances[line.account_code].credit += line.credit || 0;
-    }
+    const fullOptions: TrialBalanceOptions = {
+        startDate,
+        endDate,
+        includeThirdParty: queryOptions.includeThirdParty ?? false,
+        excludeClosingEntries: queryOptions.excludeClosingEntries !== false,
+        showZeroBalances: queryOptions.showZeroBalances ?? false,
+        pucAccounts: (pucAccounts || []).map((a: any) => ({
+            code: a.code,
+            name: a.name,
+            nature: a.nature,
+            type: a.type,
+            level: a.level,
+            parent_code: a.parent_code,
+        })),
+    };
 
-    // Build report with account details
-    const report: BalanceSheetItem[] = [];
-
-    for (const account of accounts) {
-        const bal = balances[account.code] || { debit: 0, credit: 0 };
-        if (bal.debit > 0 || bal.credit > 0) {
-            const balance = account.nature === 'DEBITO' 
-                ? bal.debit - bal.credit 
-                : bal.credit - bal.debit;
-            
-            report.push({
-                code: account.code,
-                name: account.name,
-                level: account.level,
-                debit: bal.debit,
-                credit: bal.credit,
-                balance: balance,
-                nature: account.nature,
-            });
-        }
-    }
-
-    return report;
+    return calculateTrialBalance(lines, fullOptions);
 }
 
 // Get general ledger (Libro Mayor)
