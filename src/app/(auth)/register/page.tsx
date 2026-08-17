@@ -69,9 +69,12 @@ export default function RegisterPage() {
     return (
         <div className="card" style={{ width: '100%', maxWidth: '400px', padding: '2rem' }}>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                <h1 style={{ fontSize: '1.75rem', color: 'hsl(var(--primary))', marginBottom: '0.5rem' }}>
-                    DigiKawsay
+                <h1 style={{ fontSize: '1.75rem', color: 'hsl(var(--primary))', marginBottom: '0.25rem', fontWeight: 700 }}>
+                    HPlus Contable
                 </h1>
+                <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'hsl(var(--primary))', marginBottom: '0.5rem' }}>
+                    CFO IA
+                </div>
                 <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.875rem' }}>
                     Crea tu cuenta empresarial
                 </p>

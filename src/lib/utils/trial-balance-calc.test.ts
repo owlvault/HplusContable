@@ -4,7 +4,6 @@ import {
   inferAccountMeta,
   getPrefixHierarchy,
   RawJournalLineData,
-  TrialBalanceOptions,
 } from './trial-balance-calc';
 
 describe('Trial Balance Engine (trial-balance-calc.ts)', () => {

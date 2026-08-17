@@ -1,6 +1,6 @@
 # Plan de Implementación — Contabilidad de Empresa Real
 
-Objetivo: llevar **DigiKawsay / HplusContable** desde su MVP a un sistema con el
+Objetivo: llevar **HPlus Contable - CFO IA** desde su MVP a un sistema con el
 que una empresa colombiana real pueda llevar su contabilidad de forma legal,
 completa y auditable.
 

@@ -46,11 +46,11 @@ export function BackupWidget() {
             
             if (backupType === 'full') {
                 jsonData = await generateBackupJSON();
-                filename = `digikawsay-backup-completo-${new Date().toISOString().split('T')[0]}.json`;
+                filename = `hplus-contable-backup-completo-${new Date().toISOString().split('T')[0]}.json`;
             } else {
                 const data = await exportPeriodData(periodYear, periodMonth);
                 jsonData = JSON.stringify(data, null, 2);
-                filename = `digikawsay-backup-${periodYear}-${String(periodMonth).padStart(2, '0')}.json`;
+                filename = `hplus-contable-backup-${periodYear}-${String(periodMonth).padStart(2, '0')}.json`;
             }
             
             // Download file

@@ -50,8 +50,11 @@ export default async function DashboardLayout({
                 flexDirection: 'column'
             }}>
                 <Link href="/dashboard" style={{ textDecoration: 'none' }}>
-                    <div style={{ marginBottom: '2rem', fontWeight: 'bold', fontSize: '1.25rem', color: 'hsl(var(--primary))' }}>
-                        DigiKawsay
+                    <div style={{ marginBottom: '2rem', fontWeight: 'bold', fontSize: '1.15rem', color: 'hsl(var(--primary))', lineHeight: '1.2' }}>
+                        HPlus Contable
+                        <div style={{ fontSize: '0.75rem', fontWeight: 500, color: 'hsl(var(--text-secondary))' }}>
+                            CFO IA
+                        </div>
                     </div>
                 </Link>
 

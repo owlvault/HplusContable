@@ -115,7 +115,7 @@ const BalanceSheetDocument = ({ assets, liabilities, equity, totalAssets, totalL
         <Page size="LETTER" style={styles.page}>
             <View style={styles.header}>
                 <Text style={styles.title}>ESTADO DE SITUACIÓN FINANCIERA</Text>
-                <Text style={styles.subtitle}>DigiKawsay S.A.S.</Text>
+                <Text style={styles.subtitle}>HPlus Contable - CFO IA</Text>
                 <Text style={styles.period}>{period}</Text>
             </View>
 

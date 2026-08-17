@@ -35,7 +35,7 @@ export function IncomeStatement({ income, expenses, costs, totalIncome, totalExp
         <div className="bg-white rounded-lg border border-gray-200 p-6 print:shadow-none" data-testid="income-statement">
             <div className="text-center mb-6 border-b pb-4">
                 <h1 className="text-xl font-bold text-gray-900">ESTADO DE RESULTADOS</h1>
-                <h2 className="text-lg text-gray-600">DigiKawsay S.A.S.</h2>
+                <h2 className="text-lg text-gray-600">HPlus Contable - CFO IA</h2>
                 <p className="text-sm text-gray-500">{period}</p>
             </div>
 

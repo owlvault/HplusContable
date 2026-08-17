@@ -38,7 +38,7 @@ export function TrialBalance({ data, period }: TrialBalanceProps) {
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden" data-testid="trial-balance">
             <div className="p-4 border-b border-gray-200 bg-gray-50 text-center">
                 <h1 className="text-xl font-bold text-gray-900">BALANCE DE COMPROBACIÓN</h1>
-                <h2 className="text-lg text-gray-600">DigiKawsay S.A.S.</h2>
+                <h2 className="text-lg text-gray-600">HPlus Contable - CFO IA</h2>
                 <p className="text-sm text-gray-500">{period}</p>
             </div>
 

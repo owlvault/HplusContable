@@ -93,7 +93,7 @@ export function DigiCFO() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <span style={{ fontSize: '1.25rem' }}>🤖</span>
                         <div>
-                            <h3 style={{ fontSize: '0.875rem', fontWeight: 600, margin: 0 }}>DigiCFO</h3>
+                            <h3 style={{ fontSize: '0.875rem', fontWeight: 600, margin: 0 }}>HPlus CFO IA</h3>
                             <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>Tu asesor financiero IA</span>
                         </div>
                     </div>

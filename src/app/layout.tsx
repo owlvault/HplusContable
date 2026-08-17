@@ -16,8 +16,8 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: 'HplusContable | DigiKawsay',
-  description: 'Software Contable Inteligente y Regulado',
+  title: 'HPlus Contable - CFO IA',
+  description: 'HPlus Contable - CFO IA | Sistema Operativo Comercial y Contable Autónomo',
 };
 
 export default function RootLayout({

@@ -64,7 +64,7 @@ const RESULT_TYPES = ['INGRESO', 'GASTO', 'COSTO_VENTAS', 'COSTO_PRODUCCION'];
  * Genera el asiento de cierre del ejercicio: cancela las cuentas de resultado
  * (ingresos, gastos y costos) contra la utilidad/pérdida del ejercicio.
  */
-export async function closeFiscalYear(year: number, notes?: string) {
+export async function closeFiscalYear(year: number, _notes?: string) {
     await enforcePermission('cierre', 'approve');
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

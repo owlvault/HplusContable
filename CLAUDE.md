@@ -4,7 +4,7 @@ Guidance for AI assistants working in this repository.
 
 ## Project Overview
 
-**DigiKawsay** (a.k.a. **HplusContable**) is a Colombian accounting SaaS
+**HPlus Contable - CFO IA** is a Colombian accounting SaaS
 (software contable) built as a **single-company, modular monolith**. The domain
 is Colombian double-entry accounting, so most domain names, comments, UI copy,
 and error messages are in **Spanish** — follow that convention when adding code.

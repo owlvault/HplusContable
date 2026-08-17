@@ -15,6 +15,7 @@ node_modules/
 # Archivos de trabajo local: manifiestos de ingesta, semillas generadas y
 # cualquier extracto con precios de clientes. No deben salir del equipo.
 /.local/
+scratch/
 
 # testing
 /coverage

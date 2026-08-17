@@ -106,7 +106,7 @@ const IncomeStatementDocument = ({ income, expenses, costs, totalIncome, totalEx
         <Page size="LETTER" style={styles.page}>
             <View style={styles.header}>
                 <Text style={styles.title}>ESTADO DE RESULTADOS</Text>
-                <Text style={styles.subtitle}>DigiKawsay S.A.S.</Text>
+                <Text style={styles.subtitle}>HPlus Contable - CFO IA</Text>
                 <Text style={styles.period}>{period}</Text>
             </View>
 

@@ -253,7 +253,7 @@ interface InvoicePDFProps {
 
 export function InvoicePDF({ 
     invoice, 
-    companyName = 'DigiKawsay S.A.S.',
+    companyName = 'HPlus Contable - CFO IA',
     companyNit = 'NIT: 900.123.456-7',
     companyAddress = 'Calle Principal #123',
     companyPhone = 'Tel: (601) 123-4567'
@@ -402,7 +402,7 @@ export function InvoicePDF({
                 {/* Footer */}
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>
-                        Documento generado por DigiKawsay - Sistema Contable
+                        Documento generado por HPlus Contable - CFO IA
                     </Text>
                     <Text style={styles.footerText}>
                         Generado el {new Date().toLocaleDateString('es-CO')} a las {new Date().toLocaleTimeString('es-CO')}

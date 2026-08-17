@@ -6,7 +6,7 @@ export default defineConfig({
         alias: { '@': path.resolve(__dirname, 'src') },
     },
     test: {
-        include: ['src/**/*.{test,spec}.{ts,tsx}'],
+        include: ['src/**/*.{test,spec}.{ts,tsx}', 'tests/adversarial/**/*.{test,spec}.{ts,tsx}'],
         // tools/sales-sync es un paquete aparte con sus propias pruebas sobre
         // el runner de Node (`npm test` dentro de esa carpeta).
         exclude: ['node_modules/**', 'tools/**', '.next/**'],

@@ -54,7 +54,7 @@ export function BalanceSheet({ assets, liabilities, equity, totalAssets, totalLi
         <div className="bg-white rounded-lg border border-gray-200 p-6 print:shadow-none" data-testid="balance-sheet">
             <div className="text-center mb-6 border-b pb-4">
                 <h1 className="text-xl font-bold text-gray-900">ESTADO DE SITUACIÓN FINANCIERA</h1>
-                <h2 className="text-lg text-gray-600">DigiKawsay S.A.S.</h2>
+                <h2 className="text-lg text-gray-600">HPlus Contable - CFO IA</h2>
                 <p className="text-sm text-gray-500">{period}</p>
             </div>
 
